@@ -691,23 +691,38 @@ async function syncCloudNow(){
   APP.cloudStatus=pushed.ok?'Cloud synced':'Cloud error (sync failed)';
   return pushed.ok;
 }
+async function fetchLeaderboardRows(selectCols){
+  const url=`${cloudBaseUrl()}/${CLOUD_SYNC.table}?select=${selectCols}&order=updated_at.desc&limit=200`;
+  const res=await fetchWithTimeout(url,{headers:cloudHeaders({Accept:'application/json'})});
+  if(!res.ok)return null;
+  const rows=await res.json();
+  return Array.isArray(rows)?rows:[];
+}
 async function fetchLeaderboard(){
+  const localFallback=APP.studentName
+    ?[computeLeaderboardRow(APP.studentName,APP.testAttempts)]
+    :[];
   if(!cloudConfigured()){
-    APP.leaderboard=[];
-    return false;
+    APP.leaderboard=localFallback;
+    return APP.leaderboard.length>0;
   }
-  const url=`${cloudBaseUrl()}/${CLOUD_SYNC.table}?select=student_id,student_name,attempts,updated_at&order=updated_at.desc&limit=200`;
   try{
-    const res=await fetchWithTimeout(url,{headers:cloudHeaders({Accept:'application/json'})});
-    if(!res.ok)return false;
-    const rows=await res.json();
-    APP.leaderboard=(Array.isArray(rows)?rows:[]).map(row=>{
+    // Fallback query handles older DB schema that may not have student_name yet.
+    let rows=await fetchLeaderboardRows('student_id,student_name,attempts,updated_at');
+    if(rows===null)rows=await fetchLeaderboardRows('student_id,attempts,updated_at');
+    if(rows===null){
+      APP.leaderboard=localFallback;
+      return APP.leaderboard.length>0;
+    }
+    APP.leaderboard=rows.map(row=>{
       const name=normalizeStudentName(row.student_name||row.student_id||'Student');
       return computeLeaderboardRow(name,Array.isArray(row.attempts)?row.attempts:[]);
     }).sort((a,b)=>b.totalStars-a.totalStars||b.testsCompleted-a.testsCompleted||a.studentName.localeCompare(b.studentName));
+    if(APP.leaderboard.length===0&&localFallback.length)APP.leaderboard=localFallback;
     return true;
   }catch{
-    return false;
+    APP.leaderboard=localFallback;
+    return APP.leaderboard.length>0;
   }
 }
 async function loginStudent(name){
@@ -896,9 +911,9 @@ function sHome(){
       <div class="menu-desc">See stars and rankings</div>
     </div>
     <div class="menu-card" data-a="logout-student">
-      <span class="menu-emoji">👤</span>
-      <div class="menu-name">Switch Student</div>
-      <div class="menu-desc">Login with another name</div>
+      <span class="menu-emoji">🚪</span>
+      <div class="menu-name">Log Out</div>
+      <div class="menu-desc">Exit current student</div>
     </div>
   </div>
   <div style="text-align:center;margin-top:50px">
@@ -1174,6 +1189,7 @@ function sTutorDash(){
     const cloudReady=cloudConfigured();
     const cloudLast=APP.cloudLastSync?fmtDate(new Date(APP.cloudLastSync).toISOString()):'not yet';
     const cloudStatus=cloudReady?`${APP.cloudStatus} · last sync ${cloudLast}`:'Local only (cloud API not configured)';
+    const studentRows=(APP.leaderboard||[]).slice(0,100);
     content=`
       <div class="set-card">
         <div class="set-label">🔐 Change Tutor PIN</div>
@@ -1193,6 +1209,19 @@ function sTutorDash(){
         <div class="act-row">
           <button class="act-btn secondary" data-a="load-student">Load Student</button>
           <button class="act-btn primary" data-a="sync-now">Sync Current</button>
+        </div>
+        <button class="act-btn secondary" style="width:100%;margin-top:10px" data-a="refresh-students">↻ Refresh Student List</button>
+        <div style="margin-top:10px">
+          ${studentRows.length===0
+            ?'<div class="no-data" style="padding:10px">No students found yet.</div>'
+            :studentRows.map(s=>`
+              <button class="att-item" style="width:100%;text-align:left;margin-bottom:8px" data-a="pick-student" data-val="${encodeURIComponent(s.studentName)}">
+                <div class="att-row1">
+                  <div class="att-name">${escapeHtml(s.studentName)}</div>
+                  <div class="att-score">⭐ ${s.totalStars}</div>
+                </div>
+                <div class="att-row2"><span>${s.testsCompleted} tests</span><span>Open →</span></div>
+              </button>`).join('')}
         </div>
         <button class="act-btn secondary" style="width:100%;margin-top:10px" data-a="go-leaderboard">🏅 Open Leaderboard</button>
       </div>
@@ -1532,6 +1561,23 @@ function handle(a,v){
         if(!ok)toast('Could not refresh leaderboard now');
       });
       break;
+    case 'refresh-students':
+      fetchLeaderboard().then(ok=>{
+        if(!ok)toast('Could not refresh student list now');
+        go('tutor_dash');
+      });
+      break;
+    case 'pick-student':{
+      const name=normalizeStudentName(decodeURIComponent(v||''));
+      if(name.length<2){toast('Invalid student name');break;}
+      loadStudentByName(name).then(ok=>{
+        if(!ok){toast('Could not load that student now');return;}
+        APP.tutorTab='sessions';
+        go('tutor_dash');
+        toast(`Loaded ${name}`);
+      });
+      break;
+    }
 
     // ── Student navigation ──────────────────────────────────────
     case 'go-practice':
@@ -1593,7 +1639,9 @@ function handle(a,v){
       if(APP.pinBuffer.length===4)setTimeout(()=>{
         if(APP.pinBuffer===APP.tutorPin){
           APP.tutorAuth=true;APP.pinBuffer='';APP.tutorTab='sessions';go('tutor_dash');
-          if(APP.studentName)syncCloudNow().then(()=>{if(APP.screen==='tutor_dash')go('tutor_dash');});
+          const jobs=[fetchLeaderboard()];
+          if(APP.studentName)jobs.push(syncCloudNow());
+          Promise.allSettled(jobs).then(()=>{if(APP.screen==='tutor_dash')go('tutor_dash');});
         }else{
           const dots=document.getElementById('pinDots');
           if(dots){
