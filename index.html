@@ -360,10 +360,13 @@ const TESTS=[
 // APP STATE
 // ================================================================
 const APP={
-  screen:'home',
+  screen:'student_login',
+  studentName:'',
   // Student data (persisted)
   sessions:[],
   testAttempts:[],
+  leaderboard:[],
+  selectedStudent:null,
   // Live session
   sessionStart:null,sessionType:null,timerTick:null,
   // Practice
@@ -389,7 +392,7 @@ const APP={
 const KEY_SESSIONS ='alya_sessions_v3';
 const KEY_ATTEMPTS ='alya_attempts_v3';
 const KEY_PIN      ='alya_tutor_pin_v1';
-const KEY_CLOUD_STUDENT='alya_cloud_student_v1';
+const KEY_LAST_STUDENT='alya_last_student_v1';
 const KEY_UPDATED_AT   ='alya_updated_at_v1';
 
 // ================================================================
@@ -401,14 +404,12 @@ const CLOUD_SYNC={
   baseUrl:'https://jsxfxgfkraqyliylpckc.supabase.co',
   apiKey:'sb_publishable_U_b9Ejd2CPCDnMCVrBAJmg_zE83ND60',
   table:'alya_progress',
-  defaultStudentId:'alya-student-1',
+  defaultStudentId:'student',
   timeoutMs:8000,
 };
 
 const storage=makeStorageAdapter();
 let LOCAL_UPDATED_AT=0;
-
-APP.cloudStudentId=CLOUD_SYNC.defaultStudentId;
 
 function makeStorageAdapter(){
   const ext=window.storage;
@@ -458,6 +459,9 @@ function sanitizeStudentId(raw){
     .slice(0,40);
   return cleaned||CLOUD_SYNC.defaultStudentId;
 }
+function normalizeStudentName(raw){
+  return String(raw||'').replace(/\s+/g,' ').trim().slice(0,40);
+}
 function escapeHtml(v){
   return String(v??'')
     .replace(/&/g,'&amp;')
@@ -465,6 +469,10 @@ function escapeHtml(v){
     .replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
+}
+function scopedKey(base,studentId=APP.cloudStudentId){
+  const sid=sanitizeStudentId(studentId||CLOUD_SYNC.defaultStudentId);
+  return `${base}__${sid}`;
 }
 function cloudConfigured(){
   const u=(CLOUD_SYNC.baseUrl||'').trim();
@@ -495,24 +503,85 @@ async function fetchWithTimeout(url,opt={},timeoutMs=CLOUD_SYNC.timeoutMs){
 }
 async function setLocalUpdated(ts=Date.now()){
   LOCAL_UPDATED_AT=ts;
-  try{await storage.set(KEY_UPDATED_AT,String(ts));}catch{}
+  try{await storage.set(scopedKey(KEY_UPDATED_AT),String(ts));}catch{}
+}
+async function loadLocalUpdated(){
+  try{
+    const r=await storage.get(scopedKey(KEY_UPDATED_AT));
+    const n=Number(r?.value||0);
+    LOCAL_UPDATED_AT=Number.isFinite(n)?n:0;
+  }catch{
+    LOCAL_UPDATED_AT=0;
+  }
+}
+async function loadLocalSnapshot(){
+  try{
+    const r=await storage.get(scopedKey(KEY_SESSIONS));
+    APP.sessions=safeJsonParseArray(r?.value).slice(-100);
+  }catch{
+    APP.sessions=[];
+  }
+  try{
+    const r=await storage.get(scopedKey(KEY_ATTEMPTS));
+    APP.testAttempts=safeJsonParseArray(r?.value).slice(-200);
+  }catch{
+    APP.testAttempts=[];
+  }
 }
 async function persistLocalSnapshot(){
   APP.sessions=(APP.sessions||[]).slice(-100);
   APP.testAttempts=(APP.testAttempts||[]).slice(-200);
-  try{await storage.set(KEY_SESSIONS,JSON.stringify(APP.sessions));}catch{}
-  try{await storage.set(KEY_ATTEMPTS,JSON.stringify(APP.testAttempts));}catch{}
+  try{await storage.set(scopedKey(KEY_SESSIONS),JSON.stringify(APP.sessions));}catch{}
+  try{await storage.set(scopedKey(KEY_ATTEMPTS),JSON.stringify(APP.testAttempts));}catch{}
   try{await storage.set(KEY_PIN,APP.tutorPin);}catch{}
 }
 function cloudStatusClass(){
   return APP.cloudStatus.toLowerCase().includes('error')?'warn':'ok';
 }
+function ensureStudentContext(){
+  if(!APP.studentName||!APP.cloudStudentId){
+    APP.cloudStatus='No student logged in';
+    return false;
+  }
+  return true;
+}
+function calcAttemptStars(attempt){
+  const score=Math.max(0,Number(attempt?.score||0));
+  const total=Math.max(1,Number(attempt?.total||1));
+  const duration=Math.max(1,Number(attempt?.duration||1));
+  // Faster completion yields a larger multiplier, capped to keep stars bounded.
+  const expectedSec=total*45;
+  const speedRatio=expectedSec/duration;
+  const timeMultiplier=Math.max(0.8,Math.min(3,speedRatio));
+  return Math.max(1,Math.round(score*timeMultiplier));
+}
+function computeLeaderboardRow(studentName,attempts){
+  const safeAttempts=(Array.isArray(attempts)?attempts:[]).slice().sort((a,b)=>
+    Date.parse(b?.date||0)-Date.parse(a?.date||0)
+  );
+  const testDetails=safeAttempts.map(a=>({
+    testName:a.testName||'Test',
+    score:Number(a.score||0),
+    total:Number(a.total||0),
+    duration:Number(a.duration||0),
+    stars:Number.isFinite(a.stars)?a.stars:calcAttemptStars(a),
+    date:a.date||new Date().toISOString()
+  }));
+  const totalStars=testDetails.reduce((sum,t)=>sum+(Number(t.stars)||0),0);
+  return{
+    studentName:studentName||'Student',
+    testsCompleted:testDetails.length,
+    totalStars,
+    tests:testDetails
+  };
+}
 
 async function cloudPull(){
+  if(!ensureStudentContext())return{ok:false,error:'no-student'};
   if(!cloudConfigured())return{ok:false,error:'disabled'};
   const studentId=sanitizeStudentId(APP.cloudStudentId);
   APP.cloudStudentId=studentId;
-  const url=`${cloudBaseUrl()}/${CLOUD_SYNC.table}?student_id=eq.${encodeURIComponent(studentId)}&select=sessions,attempts,tutor_pin,updated_at&limit=1`;
+  const url=`${cloudBaseUrl()}/${CLOUD_SYNC.table}?student_id=eq.${encodeURIComponent(studentId)}&select=student_name,sessions,attempts,tutor_pin,updated_at&limit=1`;
   try{
     const res=await fetchWithTimeout(url,{headers:cloudHeaders({Accept:'application/json'})});
     if(!res.ok)return{ok:false,error:`HTTP ${res.status}`};
@@ -522,6 +591,7 @@ async function cloudPull(){
     return{
       ok:true,
       row:{
+        studentName:normalizeStudentName(row.student_name||APP.studentName||studentId),
         sessions:Array.isArray(row.sessions)?row.sessions.slice(-100):[],
         attempts:Array.isArray(row.attempts)?row.attempts.slice(-200):[],
         tutorPin:/^\d{4}$/.test(row.tutor_pin||'')?row.tutor_pin:'1234',
@@ -533,11 +603,14 @@ async function cloudPull(){
   }
 }
 async function cloudPush(){
+  if(!ensureStudentContext())return{ok:false,error:'no-student'};
   if(!cloudConfigured())return{ok:false,error:'disabled'};
   const studentId=sanitizeStudentId(APP.cloudStudentId);
   APP.cloudStudentId=studentId;
+  APP.studentName=normalizeStudentName(APP.studentName)||studentId;
   const payload=[{
     student_id:studentId,
+    student_name:APP.studentName,
     sessions:(APP.sessions||[]).slice(-100),
     attempts:(APP.testAttempts||[]).slice(-200),
     tutor_pin:APP.tutorPin,
@@ -564,6 +637,7 @@ async function cloudPush(){
   }
 }
 async function syncCloudOnLoad(){
+  if(!ensureStudentContext())return;
   if(!cloudConfigured()){
     APP.cloudStatus='Local only (cloud not configured)';
     return;
@@ -584,6 +658,7 @@ async function syncCloudOnLoad(){
   }
   const remoteTs=pulled.row.updatedAt||0;
   if(remoteTs>=LOCAL_UPDATED_AT){
+    APP.studentName=normalizeStudentName(pulled.row.studentName||APP.studentName);
     APP.sessions=pulled.row.sessions;
     APP.testAttempts=pulled.row.attempts;
     APP.tutorPin=pulled.row.tutorPin;
@@ -597,56 +672,104 @@ async function syncCloudOnLoad(){
   }
 }
 async function syncCloudNow(){
+  if(!ensureStudentContext())return false;
   if(!cloudConfigured()){APP.cloudStatus='Local only (cloud not configured)';return false;}
   APP.cloudStatus='Cloud syncing...';
   const pulled=await cloudPull();
   if(!pulled.ok){APP.cloudStatus='Cloud error (sync failed)';return false;}
-  if(pulled.row){
+  const remoteTs=pulled.row?.updatedAt||0;
+  if(pulled.row&&remoteTs>=LOCAL_UPDATED_AT){
+    APP.studentName=normalizeStudentName(pulled.row.studentName||APP.studentName);
     APP.sessions=pulled.row.sessions;
     APP.testAttempts=pulled.row.attempts;
     APP.tutorPin=pulled.row.tutorPin;
-    APP.cloudLastSync=pulled.row.updatedAt||APP.cloudLastSync;
+    APP.cloudLastSync=remoteTs||APP.cloudLastSync;
+    await setLocalUpdated(remoteTs||Date.now());
   }
   await persistLocalSnapshot();
   const pushed=await cloudPush();
   APP.cloudStatus=pushed.ok?'Cloud synced':'Cloud error (sync failed)';
   return pushed.ok;
 }
+async function fetchLeaderboard(){
+  if(!cloudConfigured()){
+    APP.leaderboard=[];
+    return false;
+  }
+  const url=`${cloudBaseUrl()}/${CLOUD_SYNC.table}?select=student_id,student_name,attempts,updated_at&order=updated_at.desc&limit=200`;
+  try{
+    const res=await fetchWithTimeout(url,{headers:cloudHeaders({Accept:'application/json'})});
+    if(!res.ok)return false;
+    const rows=await res.json();
+    APP.leaderboard=(Array.isArray(rows)?rows:[]).map(row=>{
+      const name=normalizeStudentName(row.student_name||row.student_id||'Student');
+      return computeLeaderboardRow(name,Array.isArray(row.attempts)?row.attempts:[]);
+    }).sort((a,b)=>b.totalStars-a.totalStars||b.testsCompleted-a.testsCompleted||a.studentName.localeCompare(b.studentName));
+    return true;
+  }catch{
+    return false;
+  }
+}
+async function loginStudent(name){
+  const cleanName=normalizeStudentName(name);
+  if(cleanName.length<2)return false;
+  APP.studentName=cleanName;
+  APP.cloudStudentId=sanitizeStudentId(cleanName);
+  APP.cloudStatus='Loading student...';
+  APP.sessions=[];
+  APP.testAttempts=[];
+  await loadLocalSnapshot();
+  await loadLocalUpdated();
+  await syncCloudOnLoad();
+  if(cloudConfigured()){
+    const pushed=await cloudPush();
+    if(pushed.ok)APP.cloudStatus='Cloud synced';
+  }
+  try{await storage.set(KEY_LAST_STUDENT,cleanName);}catch{}
+  return true;
+}
+async function loadStudentByName(name){
+  const ok=await loginStudent(name);
+  if(!ok)return false;
+  APP.practice={mode:'convert',level:1,qNum:1,currentQ:null,answered:false,history:[]};
+  APP.test={id:null,questions:[],current:0,answers:[]};
+  APP.review={source:null,items:[],backTo:'home'};
+  return true;
+}
+function logoutStudent(){
+  APP.studentName='';
+  APP.cloudStudentId='';
+  APP.sessions=[];
+  APP.testAttempts=[];
+  APP.cloudStatus='No student logged in';
+  APP.cloudLastSync=0;
+  APP.screen='student_login';
+}
 
 async function loadAll(){
-  try{
-    const r=await storage.get(KEY_SESSIONS);
-    APP.sessions=safeJsonParseArray(r?.value).slice(-100);
-  }catch{}
-  try{
-    const r=await storage.get(KEY_ATTEMPTS);
-    APP.testAttempts=safeJsonParseArray(r?.value).slice(-200);
-  }catch{}
   try{
     const r=await storage.get(KEY_PIN);
     if(r?.value)APP.tutorPin=r.value;
   }catch{}
   try{
-    const r=await storage.get(KEY_CLOUD_STUDENT);
-    if(r?.value)APP.cloudStudentId=sanitizeStudentId(r.value);
-    else APP.cloudStudentId=sanitizeStudentId(CLOUD_SYNC.defaultStudentId);
+    const r=await storage.get(KEY_LAST_STUDENT);
+    const last=normalizeStudentName(r?.value||'');
+    if(last)APP.studentName=last;
   }catch{
-    APP.cloudStudentId=sanitizeStudentId(CLOUD_SYNC.defaultStudentId);
+    APP.studentName='';
   }
-  try{
-    const r=await storage.get(KEY_UPDATED_AT);
-    const n=Number(r?.value||0);
-    LOCAL_UPDATED_AT=Number.isFinite(n)?n:0;
-  }catch{}
-  await syncCloudOnLoad();
+  APP.screen='student_login';
 }
 async function saveSessions(){
+  if(!ensureStudentContext())return;
   await persistLocalSnapshot();
   await setLocalUpdated(Date.now());
   const pushed=await cloudPush();
   if(cloudConfigured()&&!pushed.ok)APP.cloudStatus='Cloud error (save pending)';
 }
 async function appendAttempt(a){
+  if(!ensureStudentContext())return;
+  a.stars=calcAttemptStars(a);
   APP.testAttempts.push(a);
   await persistLocalSnapshot();
   await setLocalUpdated(Date.now());
@@ -655,10 +778,13 @@ async function appendAttempt(a){
 }
 async function saveTutorPin(pin){
   APP.tutorPin=pin;
-  await persistLocalSnapshot();
-  await setLocalUpdated(Date.now());
-  const pushed=await cloudPush();
-  if(cloudConfigured()&&!pushed.ok)APP.cloudStatus='Cloud error (save pending)';
+  try{await storage.set(KEY_PIN,pin);}catch{}
+  if(ensureStudentContext()){
+    await persistLocalSnapshot();
+    await setLocalUpdated(Date.now());
+    const pushed=await cloudPush();
+    if(cloudConfigured()&&!pushed.ok)APP.cloudStatus='Cloud error (save pending)';
+  }
 }
 
 // ================================================================
@@ -709,9 +835,11 @@ function fmtDate(iso){
 function go(screen){APP.screen=screen;render();}
 function render(){
   const map={
+    student_login:sStudentLogin,
     home:sHome,practice:sPractice,
     test_menu:sTestMenu,test_active:sTestActive,
     test_results:sTestResults,review:sReview,
+    leaderboard:sLeaderboard,
     tutor_login:sTutorLogin,tutor_dash:sTutorDash,
     tutor_test_detail:sTutorTestDetail,
   };
@@ -724,12 +852,31 @@ function render(){
 // ── STUDENT SCREENS ──────────────────────────────────────────────
 // ================================================================
 
+function sStudentLogin(){
+  const lastHint=APP.studentName?`Last student: ${escapeHtml(APP.studentName)}`:'Enter your name to start';
+  return `
+<div class="screen">
+  <div class="home-header" style="padding-top:50px">
+    <div class="home-title">Alya's Weight Adventure</div>
+    <div class="home-sub">${lastHint}</div>
+  </div>
+  <div class="set-card" style="margin-top:20px">
+    <div class="set-label">👋 Student Login / Register</div>
+    <div class="set-sub">Type your name. New names are auto-registered.</div>
+    <input type="text" class="set-input compact" id="studentNameInput" maxlength="40"
+      placeholder="e.g. Alya Rahman" value="${escapeHtml(APP.studentName)}"/>
+    <button class="submit-btn" style="background:var(--mint);margin-top:10px" data-a="student-login">Continue</button>
+  </div>
+</div>`;
+}
+
 function sHome(){
+  const totalStars=APP.testAttempts.reduce((sum,a)=>sum+(Number.isFinite(a.stars)?a.stars:calcAttemptStars(a)),0);
   return `
 <div class="screen">
   <div class="home-header">
     <div class="home-title">Alya's Weight Adventure</div>
-    <div class="home-sub">Grams &amp; Kilograms 🍎⚖️</div>
+    <div class="home-sub">${escapeHtml(APP.studentName||'Student')} · ⭐ ${totalStars} stars</div>
   </div>
   <div class="cheat-bar"><strong>Remember!</strong> 1 kg = 1000 g</div>
   <div class="menu-grid">
@@ -743,11 +890,54 @@ function sHome(){
       <div class="menu-name">Test</div>
       <div class="menu-desc">Take a scored quiz</div>
     </div>
+    <div class="menu-card" data-a="go-leaderboard">
+      <span class="menu-emoji">🏅</span>
+      <div class="menu-name">Leaderboard</div>
+      <div class="menu-desc">See stars and rankings</div>
+    </div>
+    <div class="menu-card" data-a="logout-student">
+      <span class="menu-emoji">👤</span>
+      <div class="menu-name">Switch Student</div>
+      <div class="menu-desc">Login with another name</div>
+    </div>
   </div>
   <div style="text-align:center;margin-top:50px">
     <button style="background:none;border:none;font-family:'Fredoka',sans-serif;font-size:12px;opacity:.28;cursor:pointer;color:var(--ink);letter-spacing:.5px"
       data-a="go-tutor">👩‍🏫 Tutor Access</button>
   </div>
+</div>`;
+}
+
+function sLeaderboard(){
+  const board=APP.leaderboard||[];
+  return `
+<div class="screen">
+  <div class="nav">
+    <button class="nav-back" data-a="back-home">← Home</button>
+    <div class="nav-title">Leaderboard</div>
+    <button class="nav-back" data-a="refresh-leaderboard">↻ Refresh</button>
+  </div>
+  ${board.length===0
+    ?'<div class="no-data">No cloud leaderboard data yet.</div>'
+    :board.map((row,i)=>`
+      <div class="att-item">
+        <div class="att-row1">
+          <div class="att-name">${i+1}. ${escapeHtml(row.studentName)}</div>
+          <div class="att-score">⭐ ${row.totalStars}</div>
+        </div>
+        <div class="att-row2" style="opacity:.8;margin-bottom:6px">
+          <span>${row.testsCompleted} tests completed</span>
+          <span>${row.tests.length?fmtDate(row.tests[0].date):''}</span>
+        </div>
+        ${row.tests.map(t=>`
+          <div class="sess-item" style="margin-bottom:6px">
+            <div>
+              <div class="sess-type test">📝 ${escapeHtml(t.testName)}</div>
+              <div class="sess-date">Score ${t.score}/${t.total} · ⏱ ${fmtDur(t.duration)}</div>
+            </div>
+            <div class="sess-right"><div class="sess-dur">⭐ ${t.stars}</div></div>
+          </div>`).join('')}
+      </div>`).join('')}
 </div>`;
 }
 
@@ -940,9 +1130,7 @@ function sTutorDash(){
   const sess=[...APP.sessions].reverse();
   const atts=[...APP.testAttempts].reverse();
   const totalTime=APP.sessions.reduce((s,x)=>s+(x.duration||0),0);
-  const avgScore=APP.testAttempts.length
-    ?Math.round(APP.testAttempts.reduce((s,a)=>s+a.score/a.total*100,0)/APP.testAttempts.length)
-    :null;
+  const totalStars=APP.testAttempts.reduce((sum,a)=>sum+(Number.isFinite(a.stars)?a.stars:calcAttemptStars(a)),0);
 
   // ── Tab content ──
   let content='';
@@ -967,11 +1155,12 @@ function sTutorDash(){
       :atts.map(a=>{
         const pct=Math.round(a.score/a.total*100);
         const col=pct>=80?'var(--mint)':pct>=50?'var(--sun)':'var(--coral)';
+        const stars=Number.isFinite(a.stars)?a.stars:calcAttemptStars(a);
         return `
           <div class="att-item" data-a="view-attempt" data-val="${a.id}">
             <div class="att-row1">
               <div class="att-name">${TESTS.find(t=>t.id===a.testId)?.emoji||'📝'} ${a.testName}</div>
-              <div class="att-score">${a.score}/${a.total} <span style="font-size:12px;opacity:.65">(${pct}%)</span></div>
+              <div class="att-score">${a.score}/${a.total} <span style="font-size:12px;opacity:.65">(${pct}%) · ⭐ ${stars}</span></div>
             </div>
             <div class="score-bar"><div class="score-fill" style="width:${pct}%;background:${col}"></div></div>
             <div class="att-row2">
@@ -994,17 +1183,18 @@ function sTutorDash(){
         <button class="submit-btn" style="background:var(--plum);margin-top:10px" data-a="save-pin">Save New PIN</button>
       </div>
       <div class="set-card">
-        <div class="set-label">☁️ Cross-Device Sync</div>
+        <div class="set-label">👤 Open Student By Name</div>
         <div class="set-sub">${cloudReady
-          ?'Use the same Sync ID on all devices to share one student profile.'
+          ?'Load any student profile using the exact name they used at login.'
           :'Configure Supabase in CLOUD_SYNC (inside index.html) to enable cloud sync.'}</div>
-        <input type="text" class="set-input compact" id="cloudStudentId" maxlength="40"
-          value="${escapeHtml(APP.cloudStudentId)}" placeholder="student sync id"/>
+        <input type="text" class="set-input compact" id="studentLookupName" maxlength="40"
+          value="${escapeHtml(APP.studentName)}" placeholder="student full name"/>
         <div class="sync-status ${cloudStatusClass()}">${cloudStatus}</div>
         <div class="act-row">
-          <button class="act-btn secondary" data-a="save-sync-id">Save Sync ID</button>
-          <button class="act-btn primary" data-a="sync-now">Sync Now</button>
+          <button class="act-btn secondary" data-a="load-student">Load Student</button>
+          <button class="act-btn primary" data-a="sync-now">Sync Current</button>
         </div>
+        <button class="act-btn secondary" style="width:100%;margin-top:10px" data-a="go-leaderboard">🏅 Open Leaderboard</button>
       </div>
       <div class="set-card">
         <div class="set-label">🗑️ Clear All Student Data</div>
@@ -1017,7 +1207,7 @@ function sTutorDash(){
 <div class="screen">
   <div class="t-header">
     <div class="t-hdr-row">
-      <div class="t-hdr-title">👩‍🏫 Tutor Dashboard</div>
+      <div class="t-hdr-title">👩‍🏫 ${escapeHtml(APP.studentName||'Tutor Dashboard')}</div>
       <button class="t-logout" data-a="tutor-logout">Log out</button>
     </div>
     <div class="t-stats">
@@ -1034,8 +1224,8 @@ function sTutorDash(){
         <div class="t-stat-l">Tests Taken</div>
       </div>
       <div class="t-stat">
-        <div class="t-stat-n">${avgScore!==null?avgScore+'%':'—'}</div>
-        <div class="t-stat-l">Avg Score</div>
+        <div class="t-stat-n">⭐ ${totalStars}</div>
+        <div class="t-stat-l">Total Stars</div>
       </div>
     </div>
   </div>
@@ -1051,6 +1241,7 @@ function sTutorDash(){
 function sTutorTestDetail(){
   const a=APP.selectedAttempt;if(!a){APP.tutorTab='tests';return sTutorDash();}
   const pct=Math.round(a.score/a.total*100);
+  const stars=Number.isFinite(a.stars)?a.stars:calcAttemptStars(a);
   const obj=TESTS.find(t=>t.id===a.testId);
   const col=pct>=80?'var(--mint)':pct>=50?'var(--sun)':'var(--coral)';
   return `
@@ -1064,6 +1255,7 @@ function sTutorTestDetail(){
     <div class="score-big" style="color:${col}">${a.score}/${a.total}</div>
     <div class="score-sub">${pct}%</div>
     <div class="score-sub" style="margin-top:4px;font-size:13px">${fmtDate(a.date)} · ⏱ ${fmtDur(a.duration)}</div>
+    <div class="score-sub" style="margin-top:4px;font-size:13px">⭐ ${stars} stars</div>
     <div class="breakdown" style="margin-top:10px">
       <div class="chip ok">✅ ${a.score} correct</div>
       <div class="chip no">❌ ${a.total-a.score} wrong</div>
@@ -1294,20 +1486,61 @@ document.addEventListener('DOMContentLoaded',()=>{
     handle(el.dataset.a,el.dataset.val??null);
   });
   app.addEventListener('keypress',e=>{
-    if(e.key!=='Enter'||e.target.id!=='qInput')return;
-    if(APP.screen==='practice')submitPractice(e.target.value);
-    else if(APP.screen==='test_active')submitTest(e.target.value);
+    if(e.key!=='Enter')return;
+    if(e.target.id==='qInput'){
+      if(APP.screen==='practice')submitPractice(e.target.value);
+      else if(APP.screen==='test_active')submitTest(e.target.value);
+      return;
+    }
+    if(e.target.id==='studentNameInput'&&APP.screen==='student_login'){
+      handle('student-login',null);
+    }
   });
   loadAll().then(render);
 });
 
 function handle(a,v){
   switch(a){
+    case 'student-login':{
+      const inp=document.getElementById('studentNameInput');
+      const name=normalizeStudentName(inp?.value||APP.studentName);
+      loginStudent(name).then(ok=>{
+        if(!ok){toast('Please enter at least 2 characters');return;}
+        go('home');
+      });
+      break;
+    }
+    case 'logout-student':
+      if(APP.sessionStart){
+        const h=APP.practice.history||[];
+        endSession({questionsAttempted:h.length,correctAnswers:h.filter(x=>x.correct).length}).then(()=>{
+          logoutStudent();render();
+        });
+      }else{
+        logoutStudent();render();
+      }
+      break;
+    case 'go-leaderboard':
+      fetchLeaderboard().then(ok=>{
+        if(!ok&&cloudConfigured())toast('Could not refresh leaderboard now');
+        go('leaderboard');
+      });
+      break;
+    case 'refresh-leaderboard':
+      fetchLeaderboard().then(ok=>{
+        go('leaderboard');
+        if(!ok)toast('Could not refresh leaderboard now');
+      });
+      break;
+
     // ── Student navigation ──────────────────────────────────────
     case 'go-practice':
+      if(!APP.studentName){go('student_login');toast('Login with your name first');break;}
       APP.practice={mode:'convert',level:1,qNum:1,currentQ:null,answered:false,history:[]};
       startSession('practice');go('practice');break;
-    case 'go-test-menu':go('test_menu');break;
+    case 'go-test-menu':
+      if(!APP.studentName){go('student_login');toast('Login with your name first');break;}
+      go('test_menu');break;
     case 'set-level':APP.practice.level=parseInt(v);APP.practice.qNum=1;go('practice');break;
     case 'set-mode':APP.practice.mode=v;APP.practice.qNum=1;go('practice');break;
     case 'submit-ans':{
@@ -1324,6 +1557,7 @@ function handle(a,v){
     case 'go-review-practice':
       APP.review={source:'practice',items:APP.practice.history,backTo:'practice'};go('review');break;
     case 'start-test':{
+      if(!APP.studentName){go('student_login');toast('Login with your name first');break;}
       const t=TESTS.find(x=>x.id===v);
       APP.test={id:v,questions:t.questions,current:0,answers:[]};
       startSession('test');go('test_active');break;
@@ -1343,8 +1577,8 @@ function handle(a,v){
       if(APP.sessionStart){
         const h=APP.practice.history||[];
         endSession({questionsAttempted:h.length,correctAnswers:h.filter(x=>x.correct).length})
-          .then(()=>go('home'));
-      }else go('home');break;
+          .then(()=>go(APP.studentName?'home':'student_login'));
+      }else go(APP.studentName?'home':'student_login');break;
     }
 
     // ── Tutor: login ─────────────────────────────────────────────
@@ -1359,7 +1593,7 @@ function handle(a,v){
       if(APP.pinBuffer.length===4)setTimeout(()=>{
         if(APP.pinBuffer===APP.tutorPin){
           APP.tutorAuth=true;APP.pinBuffer='';APP.tutorTab='sessions';go('tutor_dash');
-          syncCloudNow().then(()=>{if(APP.screen==='tutor_dash')go('tutor_dash');});
+          if(APP.studentName)syncCloudNow().then(()=>{if(APP.screen==='tutor_dash')go('tutor_dash');});
         }else{
           const dots=document.getElementById('pinDots');
           if(dots){
@@ -1377,7 +1611,7 @@ function handle(a,v){
         d.classList.toggle('filled',i<APP.pinBuffer.length));break;
 
     // ── Tutor: dashboard ─────────────────────────────────────────
-    case 'tutor-logout':APP.tutorAuth=false;go('home');break;
+    case 'tutor-logout':APP.tutorAuth=false;go(APP.studentName?'home':'student_login');break;
     case 't-tab':APP.tutorTab=v;go('tutor_dash');break;
     case 'view-attempt':
       APP.selectedAttempt=APP.testAttempts.find(x=>x.id===v);
@@ -1391,26 +1625,30 @@ function handle(a,v){
       if(!/^\d{4}$/.test(p)){toast('PIN must be exactly 4 digits');return;}
       saveTutorPin(p).then(()=>{toast('✅ PIN updated!');if(inp)inp.value='';});break;
     }
-    case 'save-sync-id':{
-      const inp=document.getElementById('cloudStudentId');
-      const nextId=sanitizeStudentId(inp?.value||'');
-      if((nextId!==APP.cloudStudentId)&&(APP.sessions.length||APP.testAttempts.length)){
-        if(!confirm('Switch Sync ID? You may load a different student history.'))break;
+    case 'load-student':{
+      const inp=document.getElementById('studentLookupName');
+      const name=normalizeStudentName(inp?.value||'');
+      if(name.length<2){toast('Enter a valid student name');break;}
+      if((name!==APP.studentName)&&(APP.sessions.length||APP.testAttempts.length)){
+        if(!confirm('Switch to another student profile?'))break;
       }
-      APP.cloudStudentId=nextId;
-      storage.set(KEY_CLOUD_STUDENT,nextId).then(()=>syncCloudNow()).then(ok=>{
+      loadStudentByName(name).then(ok=>{
+        if(!ok){toast('Could not load that student now');return;}
+        APP.tutorTab='sessions';
         go('tutor_dash');
-        toast(ok?'✅ Sync ID saved and synced':'Saved locally (cloud unavailable)');
+        toast('✅ Student loaded');
       });
       break;
     }
     case 'sync-now':
+      if(!APP.studentName){toast('Load a student first');break;}
       if(!cloudConfigured()){toast('Cloud API not configured yet');go('tutor_dash');break;}
       syncCloudNow().then(ok=>{
         go('tutor_dash');
         toast(ok?'✅ Cloud sync complete':'Cloud sync failed (local data kept)');
       });break;
     case 'clear-data':
+      if(!APP.studentName){toast('Load a student first');break;}
       if(confirm('Delete ALL student sessions and test results permanently?')){
         APP.sessions=[];APP.testAttempts=[];
         persistLocalSnapshot()

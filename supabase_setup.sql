@@ -3,12 +3,20 @@
 
 create table if not exists public.alya_progress (
   student_id text primary key,
+  student_name text not null default 'Student',
   sessions jsonb not null default '[]'::jsonb,
   attempts jsonb not null default '[]'::jsonb,
   tutor_pin text not null default '1234',
   updated_at timestamptz not null default timezone('utc', now()),
   constraint alya_progress_pin_chk check (tutor_pin ~ '^[0-9]{4}$')
 );
+
+alter table public.alya_progress
+  add column if not exists student_name text not null default 'Student';
+
+update public.alya_progress
+set student_name = initcap(replace(student_id, '-', ' '))
+where coalesce(student_name, '') = '' or student_name = 'Student';
 
 create or replace function public.alya_touch_updated_at()
 returns trigger
@@ -30,7 +38,7 @@ alter table public.alya_progress enable row level security;
 
 -- Simple policy set for static-site usage with anon key.
 -- Anyone with your project URL + key can read/write this table.
--- Use long, hard-to-guess Sync IDs per student/class.
+-- Student identity is based on the name entered at login.
 drop policy if exists "alya_progress_select_anon" on public.alya_progress;
 create policy "alya_progress_select_anon"
 on public.alya_progress
