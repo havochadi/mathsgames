@@ -390,6 +390,7 @@ const APP={
   cloudStudentId:'',
   cloudStatus:'Local only',
   cloudLastSync:0,
+  cloudClearCutoff:0,
 };
 
 // ================================================================
@@ -400,6 +401,7 @@ const KEY_ATTEMPTS ='alya_attempts_v3';
 const KEY_PIN      ='alya_tutor_pin_v1';
 const KEY_LAST_STUDENT='alya_last_student_v1';
 const KEY_UPDATED_AT   ='alya_updated_at_v1';
+const KEY_CLEAR_CUTOFF ='alya_cloud_clear_cutoff_v1';
 
 // ================================================================
 // CLOUD SYNC CONFIG (Supabase REST)
@@ -519,6 +521,20 @@ async function fetchWithTimeout(url,opt={},timeoutMs=CLOUD_SYNC.timeoutMs){
 async function setLocalUpdated(ts=Date.now()){
   LOCAL_UPDATED_AT=ts;
   try{await storage.set(scopedKey(KEY_UPDATED_AT),String(ts));}catch{}
+}
+async function setCloudClearCutoff(ts=0){
+  const n=Number(ts||0);
+  APP.cloudClearCutoff=Number.isFinite(n)&&n>0?n:0;
+  try{await storage.set(KEY_CLEAR_CUTOFF,String(APP.cloudClearCutoff));}catch{}
+}
+async function loadCloudClearCutoff(){
+  try{
+    const r=await storage.get(KEY_CLEAR_CUTOFF);
+    const n=Number(r?.value||0);
+    APP.cloudClearCutoff=Number.isFinite(n)&&n>0?n:0;
+  }catch{
+    APP.cloudClearCutoff=0;
+  }
 }
 async function loadLocalUpdated(){
   try{
@@ -918,6 +934,7 @@ async function fetchLeaderboard(){
   const localFallback=APP.studentName
     ?[computeLeaderboardRow(APP.studentName,APP.testAttempts)]
     :[];
+  const clearCutoff=Number(APP.cloudClearCutoff||0);
   if(!cloudConfigured()){
     APP.leaderboard=localFallback;
     return APP.leaderboard.length>0;
@@ -932,10 +949,13 @@ async function fetchLeaderboard(){
       return APP.leaderboard.length>0;
     }
     APP.leaderboard=rows
-      .map(row=>{
-        const name=normalizeStudentName(row.student_name||row.student_id||'Student');
-        return computeLeaderboardRow(name,Array.isArray(row.attempts)?row.attempts:[]);
-      })
+      .map(row=>({
+        name:normalizeStudentName(row.student_name||row.student_id||'Student'),
+        attempts:Array.isArray(row.attempts)?row.attempts:[],
+        updatedAt:Date.parse(row.updated_at||'')||0
+      }))
+      .filter(item=>!clearCutoff||(item.updatedAt>0&&item.updatedAt>clearCutoff))
+      .map(item=>computeLeaderboardRow(item.name,item.attempts))
       .filter(row=>row.testsCompleted>0||row.totalStars>0)
       .sort((a,b)=>b.totalStars-a.totalStars||b.testsCompleted-a.testsCompleted||a.studentName.localeCompare(b.studentName));
     if(APP.leaderboard.length===0&&localFallback.length)APP.leaderboard=localFallback;
@@ -982,6 +1002,7 @@ async function loadAll(){
     const r=await storage.get(KEY_PIN);
     if(r?.value)APP.tutorPin=r.value;
   }catch{}
+  await loadCloudClearCutoff();
   try{
     const r=await storage.get(KEY_LAST_STUDENT);
     const last=normalizeStudentName(r?.value||'');
@@ -1951,8 +1972,10 @@ function handle(a,v){
         if(!confirm('Delete ALL students from cloud and this device cache? This cannot be undone.'))break;
         APP.cloudStatus=hasCloud?'Cloud clearing all students...':'Local only (cloud not configured)';
         go('tutor_dash');
+        const clearMark=Date.now();
         const clearLocally=async()=>{
           clearLocalSnapshotsForAllStudents();
+          await setCloudClearCutoff(clearMark);
           APP.sessions=[];
           APP.testAttempts=[];
           APP.leaderboard=[];
@@ -1961,8 +1984,8 @@ function handle(a,v){
           APP.cloudStudentId='';
           await persistLocalSnapshot();
           try{await storage.set(KEY_LAST_STUDENT,'');}catch{}
-          await setLocalUpdated(Date.now());
-          APP.cloudLastSync=hasCloud?Date.now():0;
+          await setLocalUpdated(clearMark);
+          APP.cloudLastSync=hasCloud?clearMark:0;
           APP.cloudStatus=hasCloud?'Cloud synced':'Local data cleared';
           go('tutor_dash');
           toast(hasCloud?'✅ All students cleared':'Local student data cleared');
