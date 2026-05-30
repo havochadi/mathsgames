@@ -742,6 +742,37 @@ async function cloudDeleteAllStudents(){
     return{ok:false,error:err?.name==='AbortError'?'timeout':(err?.message||'network error')};
   }
 }
+async function cloudWipeAllStudentProgress(){
+  if(!cloudConfigured())return{ok:false,error:'disabled'};
+  const filters=['student_id=not.is.null','student_id=neq.__never__'];
+  const payload={
+    sessions:[],
+    attempts:[],
+    updated_at:new Date().toISOString(),
+  };
+  try{
+    let lastError='wipe failed';
+    for(const filter of filters){
+      const url=`${cloudBaseUrl()}/${CLOUD_SYNC.table}?${filter}`;
+      const res=await fetchWithTimeout(url,{
+        method:'PATCH',
+        headers:cloudHeaders({
+          'Content-Type':'application/json',
+          'Prefer':'return=minimal'
+        }),
+        body:JSON.stringify(payload)
+      });
+      if(!res.ok){
+        lastError=await parseCloudHttpError(res);
+        continue;
+      }
+      return{ok:true};
+    }
+    return{ok:false,error:lastError};
+  }catch(err){
+    return{ok:false,error:err?.name==='AbortError'?'timeout':(err?.message||'network error')};
+  }
+}
 async function syncCloudOnLoad(){
   if(!ensureStudentContext())return;
   if(!cloudConfigured()){
@@ -826,10 +857,13 @@ async function fetchLeaderboard(){
       APP.leaderboard=localFallback;
       return APP.leaderboard.length>0;
     }
-    APP.leaderboard=rows.map(row=>{
-      const name=normalizeStudentName(row.student_name||row.student_id||'Student');
-      return computeLeaderboardRow(name,Array.isArray(row.attempts)?row.attempts:[]);
-    }).sort((a,b)=>b.totalStars-a.totalStars||b.testsCompleted-a.testsCompleted||a.studentName.localeCompare(b.studentName));
+    APP.leaderboard=rows
+      .map(row=>{
+        const name=normalizeStudentName(row.student_name||row.student_id||'Student');
+        return computeLeaderboardRow(name,Array.isArray(row.attempts)?row.attempts:[]);
+      })
+      .filter(row=>row.testsCompleted>0||row.totalStars>0)
+      .sort((a,b)=>b.totalStars-a.totalStars||b.testsCompleted-a.testsCompleted||a.studentName.localeCompare(b.studentName));
     if(APP.leaderboard.length===0&&localFallback.length)APP.leaderboard=localFallback;
     return true;
   }catch{
@@ -1864,13 +1898,19 @@ function handle(a,v){
           break;
         }
         cloudDeleteAllStudents().then(result=>{
-          if(!result.ok){
-            APP.cloudStatus=`Cloud error: ${shortCloudError(result.error)} (clear failed)`;
-            go('tutor_dash');
-            toast('Cloud clear failed');
+          if(result.ok){
+            clearLocally().catch(()=>toast('Could not finish local cleanup'));
             return;
           }
-          clearLocally().catch(()=>toast('Could not finish local cleanup'));
+          cloudWipeAllStudentProgress().then(fallback=>{
+            if(!fallback.ok){
+              APP.cloudStatus=`Cloud error: ${shortCloudError(result.error||fallback.error)} (clear failed)`;
+              go('tutor_dash');
+              toast('Cloud clear failed');
+              return;
+            }
+            clearLocally().catch(()=>toast('Could not finish local cleanup'));
+          });
         });
         break;
       }
