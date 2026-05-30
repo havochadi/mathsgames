@@ -372,6 +372,7 @@ const APP={
   sessions:[],
   testAttempts:[],
   leaderboard:[],
+  studentDirectory:[],
   selectedStudent:null,
   // Live session
   sessionStart:null,sessionType:null,timerTick:null,
@@ -582,7 +583,11 @@ function calcAttemptStars(attempt){
   const duration=Math.max(1,Number(attempt?.duration||1));
   const expectedSec=total*45;
   const speedRatio=expectedSec/duration;
-  const timeMultiplier=Math.max(0.8,Math.min(3,speedRatio));
+  // Faster than expected gets a stronger bonus curve, slower gets a gentle penalty.
+  const fastBonus=Math.max(0,speedRatio-1);
+  const timeMultiplier=speedRatio>=1
+    ?Math.min(4,1+fastBonus*1.6)
+    :Math.max(0.7,speedRatio);
   return Math.max(1,Math.round(score*timeMultiplier));
 }
 function computeLeaderboardRow(studentName,attempts){
@@ -594,7 +599,7 @@ function computeLeaderboardRow(studentName,attempts){
     score:Number(a.score||0),
     total:Number(a.total||0),
     duration:Number(a.duration||0),
-    stars:Number.isFinite(a.stars)?a.stars:calcAttemptStars(a),
+    stars:calcAttemptStars(a),
     date:a.date||new Date().toISOString()
   }));
   const totalStars=testDetails.reduce((sum,t)=>sum+(Number(t.stars)||0),0);
@@ -638,6 +643,7 @@ function sortedUniqueStudentNames(){
     names.push(name);
   };
   add(APP.studentName);
+  (APP.studentDirectory||[]).forEach(row=>add(row?.studentName));
   (APP.leaderboard||[]).forEach(row=>add(row?.studentName));
   return names.sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
 }
@@ -876,13 +882,12 @@ async function syncCloudOnLoad(){
     return;
   }
   if(!pulled.row){
-    APP.cloudStatus='Cloud ready';
-    if(APP.sessions.length||APP.testAttempts.length||APP.tutorPin!=='1234'){
-      const pushed=await cloudPush();
-      APP.cloudStatus=pushed.ok
-        ?'Cloud synced'
-        :`Cloud error: ${shortCloudError(pushed.error)} (using local)`;
-    }
+    // Always create a cloud row so tutor can see registered students
+    // even if they have not attempted any test yet.
+    const pushed=await cloudPush();
+    APP.cloudStatus=pushed.ok
+      ?'Cloud synced'
+      :`Cloud error: ${shortCloudError(pushed.error)} (using local)`;
     return;
   }
   const remoteTs=pulled.row.updatedAt||0;
@@ -952,9 +957,11 @@ async function fetchLeaderboard(){
       .map(row=>({
         name:normalizeStudentName(row.student_name||row.student_id||'Student'),
         attempts:Array.isArray(row.attempts)?row.attempts:[],
-        updatedAt:Date.parse(row.updated_at||'')||0
+        updatedAt:Date.parse(row.updated_at||'')||0,
+        latestAttemptAt:(Array.isArray(row.attempts)?row.attempts:[])
+          .reduce((maxTs,a)=>Math.max(maxTs,Date.parse(a?.date||'')||0),0)
       }))
-      .filter(item=>!clearCutoff||(item.updatedAt>0&&item.updatedAt>clearCutoff))
+      .filter(item=>!clearCutoff||item.latestAttemptAt>clearCutoff)
       .map(item=>computeLeaderboardRow(item.name,item.attempts))
       .filter(row=>row.testsCompleted>0||row.totalStars>0)
       .sort((a,b)=>b.totalStars-a.totalStars||b.testsCompleted-a.testsCompleted||a.studentName.localeCompare(b.studentName));
@@ -963,6 +970,45 @@ async function fetchLeaderboard(){
   }catch{
     APP.leaderboard=localFallback;
     return APP.leaderboard.length>0;
+  }
+}
+async function fetchStudentDirectory(){
+  const localFallback=APP.studentName
+    ?[computeLeaderboardRow(APP.studentName,APP.testAttempts)]
+    :[];
+  const clearCutoff=Number(APP.cloudClearCutoff||0);
+  if(!cloudConfigured()){
+    APP.studentDirectory=localFallback;
+    return APP.studentDirectory.length>0;
+  }
+  try{
+    let rows=await fetchLeaderboardRows('student_id,student_name,attempts,updated_at',true);
+    if(rows===null)rows=await fetchLeaderboardRows('student_id,attempts,updated_at',true);
+    if(rows===null)rows=await fetchLeaderboardRows('student_id,student_name,attempts',false);
+    if(rows===null)rows=await fetchLeaderboardRows('student_id,attempts',false);
+    if(rows===null){
+      APP.studentDirectory=localFallback;
+      return APP.studentDirectory.length>0;
+    }
+    APP.studentDirectory=rows
+      .map(row=>({
+        name:normalizeStudentName(row.student_name||row.student_id||'Student'),
+        attempts:Array.isArray(row.attempts)?row.attempts:[],
+        updatedAt:Date.parse(row.updated_at||'')||0,
+        latestAttemptAt:(Array.isArray(row.attempts)?row.attempts:[])
+          .reduce((maxTs,a)=>Math.max(maxTs,Date.parse(a?.date||'')||0),0)
+      }))
+      .filter(item=>{
+        if(!clearCutoff)return true;
+        return item.latestAttemptAt>clearCutoff||(item.updatedAt>clearCutoff);
+      })
+      .map(item=>computeLeaderboardRow(item.name,item.attempts))
+      .sort((a,b)=>b.totalStars-a.totalStars||b.testsCompleted-a.testsCompleted||a.studentName.localeCompare(b.studentName));
+    if(APP.studentDirectory.length===0&&localFallback.length)APP.studentDirectory=localFallback;
+    return true;
+  }catch{
+    APP.studentDirectory=localFallback;
+    return APP.studentDirectory.length>0;
   }
 }
 async function loginStudent(name){
@@ -1128,7 +1174,7 @@ function sStudentLogin(){
 }
 
 function sHome(){
-  const totalStars=APP.testAttempts.reduce((sum,a)=>sum+(Number.isFinite(a.stars)?a.stars:calcAttemptStars(a)),0);
+  const totalStars=APP.testAttempts.reduce((sum,a)=>sum+calcAttemptStars(a),0);
   return `
 <div class="screen">
   <div class="home-header">
@@ -1387,7 +1433,7 @@ function sTutorDash(){
   const sess=[...APP.sessions].reverse();
   const atts=[...APP.testAttempts].reverse();
   const totalTime=APP.sessions.reduce((s,x)=>s+(x.duration||0),0);
-  const totalStars=APP.testAttempts.reduce((sum,a)=>sum+(Number.isFinite(a.stars)?a.stars:calcAttemptStars(a)),0);
+  const totalStars=APP.testAttempts.reduce((sum,a)=>sum+calcAttemptStars(a),0);
   const studentNames=sortedUniqueStudentNames();
   const selectedStudent=normalizeStudentName(APP.studentName);
   const studentDropdown=studentNames.length===0
@@ -1441,7 +1487,7 @@ function sTutorDash(){
     const cloudReady=cloudConfigured();
     const cloudLast=APP.cloudLastSync?fmtDate(new Date(APP.cloudLastSync).toISOString()):'not yet';
     const cloudStatus=cloudReady?`${APP.cloudStatus} · last sync ${cloudLast}`:'Local only (cloud API not configured)';
-    const studentRows=(APP.leaderboard||[]).slice(0,100);
+    const studentRows=(APP.studentDirectory||[]).slice(0,100);
     content=`
       <div class="set-card">
         <div class="set-label">🔐 Change Tutor PIN</div>
@@ -1453,7 +1499,7 @@ function sTutorDash(){
       <div class="set-card">
         <div class="set-label">👤 Open Student By Name</div>
         <div class="set-sub">${cloudReady
-          ?'Load any student profile using the exact name they used at login.'
+          ?'Load any student profile using the exact name they used at login. Registered students are listed below, including students with zero tests.'
           :'Configure Supabase in CLOUD_SYNC (inside index.html) to enable cloud sync.'}</div>
         <input type="text" class="set-input compact" id="studentLookupName" maxlength="40"
           value="${escapeHtml(APP.studentName)}" placeholder="student full name"/>
@@ -1822,7 +1868,7 @@ function handle(a,v){
       });
       break;
     case 'refresh-students':
-      fetchLeaderboard().then(ok=>{
+      fetchStudentDirectory().then(ok=>{
         if(!ok)toast('Could not refresh student list now');
         go('tutor_dash');
       });
@@ -1910,7 +1956,7 @@ function handle(a,v){
       if(APP.pinBuffer.length===4)setTimeout(()=>{
         if(APP.pinBuffer===APP.tutorPin){
           APP.tutorAuth=true;APP.pinBuffer='';APP.tutorTab='sessions';go('tutor_dash');
-          const jobs=[fetchLeaderboard()];
+          const jobs=[fetchLeaderboard(),fetchStudentDirectory()];
           if(APP.studentName)jobs.push(syncCloudNow());
           Promise.allSettled(jobs).then(()=>{if(APP.screen==='tutor_dash')go('tutor_dash');});
         }else{
@@ -1979,6 +2025,7 @@ function handle(a,v){
           APP.sessions=[];
           APP.testAttempts=[];
           APP.leaderboard=[];
+          APP.studentDirectory=[];
           APP.selectedAttempt=null;
           APP.studentName='';
           APP.cloudStudentId='';
@@ -2030,6 +2077,7 @@ function handle(a,v){
             return;
           }
           await clearLocally().catch(()=>toast('Could not finish local cleanup'));
+          APP.studentDirectory=[];
           await fetchLeaderboard().catch(()=>{});
           if(APP.leaderboard.length>0){
             APP.cloudStatus='Cloud clear partial (hidden locally)';
