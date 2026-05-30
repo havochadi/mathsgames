@@ -13,6 +13,28 @@ create table if not exists public.alya_progress (
 
 alter table public.alya_progress
   add column if not exists student_name text not null default 'Student';
+alter table public.alya_progress
+  add column if not exists sessions jsonb not null default '[]'::jsonb;
+alter table public.alya_progress
+  add column if not exists attempts jsonb not null default '[]'::jsonb;
+alter table public.alya_progress
+  add column if not exists tutor_pin text not null default '1234';
+alter table public.alya_progress
+  add column if not exists updated_at timestamptz not null default timezone('utc', now());
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'alya_progress_pin_chk'
+      and conrelid = 'public.alya_progress'::regclass
+  ) then
+    alter table public.alya_progress
+      add constraint alya_progress_pin_chk check (tutor_pin ~ '^[0-9]{4}$');
+  end if;
+end
+$$;
 
 update public.alya_progress
 set student_name = initcap(replace(student_id, '-', ' '))

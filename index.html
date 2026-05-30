@@ -574,29 +574,62 @@ function computeLeaderboardRow(studentName,attempts){
     tests:testDetails
   };
 }
+async function parseCloudHttpError(res){
+  let detail='';
+  try{
+    const raw=await res.text();
+    if(raw){
+      try{
+        const j=JSON.parse(raw);
+        detail=j?.message||j?.error_description||j?.details||j?.hint||raw;
+      }catch{
+        detail=raw;
+      }
+    }
+  }catch{}
+  const clean=String(detail||'').replace(/\s+/g,' ').trim().slice(0,120);
+  return clean?`HTTP ${res.status}: ${clean}`:`HTTP ${res.status}`;
+}
+function shortCloudError(err){
+  const msg=String(err||'error').replace(/\s+/g,' ').trim();
+  if(!msg)return'error';
+  return msg.length>80?msg.slice(0,77)+'...':msg;
+}
 
 async function cloudPull(){
   if(!ensureStudentContext())return{ok:false,error:'no-student'};
   if(!cloudConfigured())return{ok:false,error:'disabled'};
   const studentId=sanitizeStudentId(APP.cloudStudentId);
   APP.cloudStudentId=studentId;
-  const url=`${cloudBaseUrl()}/${CLOUD_SYNC.table}?student_id=eq.${encodeURIComponent(studentId)}&select=student_name,sessions,attempts,tutor_pin,updated_at&limit=1`;
+  const selects=[
+    'student_name,sessions,attempts,tutor_pin,updated_at',
+    'sessions,attempts,tutor_pin,updated_at',
+    'sessions,attempts,updated_at',
+  ];
   try{
-    const res=await fetchWithTimeout(url,{headers:cloudHeaders({Accept:'application/json'})});
-    if(!res.ok)return{ok:false,error:`HTTP ${res.status}`};
-    const rows=await res.json();
-    if(!Array.isArray(rows)||rows.length===0)return{ok:true,row:null};
-    const row=rows[0];
-    return{
-      ok:true,
-      row:{
-        studentName:normalizeStudentName(row.student_name||APP.studentName||studentId),
-        sessions:Array.isArray(row.sessions)?row.sessions.slice(-100):[],
-        attempts:Array.isArray(row.attempts)?row.attempts.slice(-200):[],
-        tutorPin:/^\d{4}$/.test(row.tutor_pin||'')?row.tutor_pin:'1234',
-        updatedAt:Date.parse(row.updated_at||'')||0
+    let lastError='query failed';
+    for(const select of selects){
+      const url=`${cloudBaseUrl()}/${CLOUD_SYNC.table}?student_id=eq.${encodeURIComponent(studentId)}&select=${select}&limit=1`;
+      const res=await fetchWithTimeout(url,{headers:cloudHeaders({Accept:'application/json'})});
+      if(!res.ok){
+        lastError=await parseCloudHttpError(res);
+        continue;
       }
-    };
+      const rows=await res.json().catch(()=>[]);
+      if(!Array.isArray(rows)||rows.length===0)return{ok:true,row:null};
+      const row=rows[0];
+      return{
+        ok:true,
+        row:{
+          studentName:normalizeStudentName(row.student_name||APP.studentName||studentId),
+          sessions:Array.isArray(row.sessions)?row.sessions.slice(-100):[],
+          attempts:Array.isArray(row.attempts)?row.attempts.slice(-200):[],
+          tutorPin:/^\d{4}$/.test(row.tutor_pin||'')?row.tutor_pin:'1234',
+          updatedAt:Date.parse(row.updated_at||'')||0
+        }
+      };
+    }
+    return{ok:false,error:lastError};
   }catch(err){
     return{ok:false,error:err?.name==='AbortError'?'timeout':(err?.message||'network error')};
   }
@@ -607,30 +640,40 @@ async function cloudPush(){
   const studentId=sanitizeStudentId(APP.cloudStudentId);
   APP.cloudStudentId=studentId;
   APP.studentName=normalizeStudentName(APP.studentName)||studentId;
-  const payload=[{
+  const basePayload={
     student_id:studentId,
-    student_name:APP.studentName,
     sessions:(APP.sessions||[]).slice(-100),
     attempts:(APP.testAttempts||[]).slice(-200),
-    tutor_pin:APP.tutorPin,
     updated_at:new Date().toISOString(),
-  }];
+  };
+  const payloads=[
+    [{...basePayload,student_name:APP.studentName,tutor_pin:APP.tutorPin}],
+    [{...basePayload,tutor_pin:APP.tutorPin}],
+    [basePayload],
+  ];
   const url=`${cloudBaseUrl()}/${CLOUD_SYNC.table}?on_conflict=student_id`;
   try{
-    const res=await fetchWithTimeout(url,{
-      method:'POST',
-      headers:cloudHeaders({
-        'Content-Type':'application/json',
-        'Prefer':'resolution=merge-duplicates,return=representation'
-      }),
-      body:JSON.stringify(payload)
-    });
-    if(!res.ok)return{ok:false,error:`HTTP ${res.status}`};
-    const rows=await res.json().catch(()=>[]);
-    const updatedAt=Date.parse(rows?.[0]?.updated_at||'')||Date.now();
-    APP.cloudLastSync=updatedAt;
-    await setLocalUpdated(updatedAt);
-    return{ok:true,updatedAt};
+    let lastError='upsert failed';
+    for(const payload of payloads){
+      const res=await fetchWithTimeout(url,{
+        method:'POST',
+        headers:cloudHeaders({
+          'Content-Type':'application/json',
+          'Prefer':'resolution=merge-duplicates,return=representation'
+        }),
+        body:JSON.stringify(payload)
+      });
+      if(!res.ok){
+        lastError=await parseCloudHttpError(res);
+        continue;
+      }
+      const rows=await res.json().catch(()=>[]);
+      const updatedAt=Date.parse(rows?.[0]?.updated_at||'')||Date.now();
+      APP.cloudLastSync=updatedAt;
+      await setLocalUpdated(updatedAt);
+      return{ok:true,updatedAt};
+    }
+    return{ok:false,error:lastError};
   }catch(err){
     return{ok:false,error:err?.name==='AbortError'?'timeout':(err?.message||'network error')};
   }
@@ -644,14 +687,16 @@ async function syncCloudOnLoad(){
   APP.cloudStatus='Cloud connecting...';
   const pulled=await cloudPull();
   if(!pulled.ok){
-    APP.cloudStatus='Cloud error (using local)';
+    APP.cloudStatus=`Cloud error: ${shortCloudError(pulled.error)} (using local)`;
     return;
   }
   if(!pulled.row){
     APP.cloudStatus='Cloud ready';
     if(APP.sessions.length||APP.testAttempts.length||APP.tutorPin!=='1234'){
       const pushed=await cloudPush();
-      if(pushed.ok)APP.cloudStatus='Cloud synced';
+      APP.cloudStatus=pushed.ok
+        ?'Cloud synced'
+        :`Cloud error: ${shortCloudError(pushed.error)} (using local)`;
     }
     return;
   }
@@ -667,7 +712,9 @@ async function syncCloudOnLoad(){
     APP.cloudStatus='Cloud synced';
   }else{
     const pushed=await cloudPush();
-    APP.cloudStatus=pushed.ok?'Cloud synced':'Cloud error (using local)';
+    APP.cloudStatus=pushed.ok
+      ?'Cloud synced'
+      :`Cloud error: ${shortCloudError(pushed.error)} (using local)`;
   }
 }
 async function syncCloudNow(){
@@ -675,7 +722,7 @@ async function syncCloudNow(){
   if(!cloudConfigured()){APP.cloudStatus='Local only (cloud not configured)';return false;}
   APP.cloudStatus='Cloud syncing...';
   const pulled=await cloudPull();
-  if(!pulled.ok){APP.cloudStatus='Cloud error (sync failed)';return false;}
+  if(!pulled.ok){APP.cloudStatus=`Cloud error: ${shortCloudError(pulled.error)} (sync failed)`;return false;}
   if(pulled.row){
     APP.studentName=normalizeStudentName(pulled.row.studentName||APP.studentName);
     APP.sessions=pulled.row.sessions;
@@ -685,11 +732,14 @@ async function syncCloudNow(){
   }
   await persistLocalSnapshot();
   const pushed=await cloudPush();
-  APP.cloudStatus=pushed.ok?'Cloud synced':'Cloud error (sync failed)';
+  APP.cloudStatus=pushed.ok
+    ?'Cloud synced'
+    :`Cloud error: ${shortCloudError(pushed.error)} (sync failed)`;
   return pushed.ok;
 }
-async function fetchLeaderboardRows(selectCols){
-  const url=`${cloudBaseUrl()}/${CLOUD_SYNC.table}?select=${selectCols}&order=updated_at.desc&limit=200`;
+async function fetchLeaderboardRows(selectCols,ordered=true){
+  const orderPart=ordered?'&order=updated_at.desc':'';
+  const url=`${cloudBaseUrl()}/${CLOUD_SYNC.table}?select=${selectCols}${orderPart}&limit=200`;
   const res=await fetchWithTimeout(url,{headers:cloudHeaders({Accept:'application/json'})});
   if(!res.ok)return null;
   const rows=await res.json();
@@ -704,8 +754,10 @@ async function fetchLeaderboard(){
     return APP.leaderboard.length>0;
   }
   try{
-    let rows=await fetchLeaderboardRows('student_id,student_name,attempts,updated_at');
-    if(rows===null)rows=await fetchLeaderboardRows('student_id,attempts,updated_at');
+    let rows=await fetchLeaderboardRows('student_id,student_name,attempts,updated_at',true);
+    if(rows===null)rows=await fetchLeaderboardRows('student_id,attempts,updated_at',true);
+    if(rows===null)rows=await fetchLeaderboardRows('student_id,student_name,attempts',false);
+    if(rows===null)rows=await fetchLeaderboardRows('student_id,attempts',false);
     if(rows===null){
       APP.leaderboard=localFallback;
       return APP.leaderboard.length>0;
