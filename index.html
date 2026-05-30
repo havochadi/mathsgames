@@ -773,6 +773,80 @@ async function cloudWipeAllStudentProgress(){
     return{ok:false,error:err?.name==='AbortError'?'timeout':(err?.message||'network error')};
   }
 }
+async function cloudFetchStudentIds(){
+  if(!cloudConfigured())return[];
+  const selectQueries=['student_id','student_id,student_name'];
+  try{
+    for(const selectCols of selectQueries){
+      const rows=await fetchLeaderboardRows(selectCols,false);
+      if(rows===null)continue;
+      const ids=rows
+        .map(r=>sanitizeStudentId(r?.student_id||''))
+        .filter(Boolean);
+      return Array.from(new Set(ids));
+    }
+    return[];
+  }catch{
+    return[];
+  }
+}
+async function cloudDeleteStudentsByIds(studentIds){
+  if(!cloudConfigured())return{ok:false,error:'disabled'};
+  const ids=Array.from(new Set((studentIds||[]).map(v=>sanitizeStudentId(v)).filter(Boolean)));
+  if(ids.length===0)return{ok:true};
+  let hadSuccess=false;
+  let lastError='delete by id failed';
+  for(const id of ids){
+    const url=`${cloudBaseUrl()}/${CLOUD_SYNC.table}?student_id=eq.${encodeURIComponent(id)}`;
+    try{
+      const res=await fetchWithTimeout(url,{
+        method:'DELETE',
+        headers:cloudHeaders({'Prefer':'return=minimal'})
+      });
+      if(!res.ok){
+        lastError=await parseCloudHttpError(res);
+        continue;
+      }
+      hadSuccess=true;
+    }catch(err){
+      lastError=err?.name==='AbortError'?'timeout':(err?.message||'network error');
+    }
+  }
+  return hadSuccess?{ok:true}:{ok:false,error:lastError};
+}
+async function cloudWipeStudentsByIds(studentIds){
+  if(!cloudConfigured())return{ok:false,error:'disabled'};
+  const ids=Array.from(new Set((studentIds||[]).map(v=>sanitizeStudentId(v)).filter(Boolean)));
+  if(ids.length===0)return{ok:true};
+  const payload={
+    sessions:[],
+    attempts:[],
+    updated_at:new Date().toISOString(),
+  };
+  let hadSuccess=false;
+  let lastError='wipe by id failed';
+  for(const id of ids){
+    const url=`${cloudBaseUrl()}/${CLOUD_SYNC.table}?student_id=eq.${encodeURIComponent(id)}`;
+    try{
+      const res=await fetchWithTimeout(url,{
+        method:'PATCH',
+        headers:cloudHeaders({
+          'Content-Type':'application/json',
+          'Prefer':'return=minimal'
+        }),
+        body:JSON.stringify(payload)
+      });
+      if(!res.ok){
+        lastError=await parseCloudHttpError(res);
+        continue;
+      }
+      hadSuccess=true;
+    }catch(err){
+      lastError=err?.name==='AbortError'?'timeout':(err?.message||'network error');
+    }
+  }
+  return hadSuccess?{ok:true}:{ok:false,error:lastError};
+}
 async function syncCloudOnLoad(){
   if(!ensureStudentContext())return;
   if(!cloudConfigured()){
@@ -1022,7 +1096,7 @@ function sStudentLogin(){
     <div class="set-label">👋 Student Login / Register</div>
     <div class="set-sub">Type your name. New names are auto-registered.</div>
     <input type="text" class="set-input compact" id="studentNameInput" maxlength="40"
-      placeholder="e.g. Alya Rahman" value="${escapeHtml(APP.studentName)}"/>
+      placeholder="e.g. Alya" value="${escapeHtml(APP.studentName)}"/>
     <button class="submit-btn" style="background:var(--mint);margin-top:10px" data-a="student-login">Continue</button>
   </div>
   <div style="text-align:center;margin-top:26px">
@@ -1897,20 +1971,48 @@ function handle(a,v){
           clearLocally().catch(()=>toast('Could not clear local student data'));
           break;
         }
-        cloudDeleteAllStudents().then(result=>{
-          if(result.ok){
-            clearLocally().catch(()=>toast('Could not finish local cleanup'));
+        cloudDeleteAllStudents().then(async result=>{
+          let cloudCleared=result.ok;
+          let clearError=result.error||'clear failed';
+          if(!cloudCleared){
+            const studentIds=await cloudFetchStudentIds();
+            const deleteById=await cloudDeleteStudentsByIds(studentIds);
+            if(deleteById.ok){
+              cloudCleared=true;
+            }else{
+              clearError=deleteById.error||clearError;
+            }
+          }
+          if(!cloudCleared){
+            const wipeAll=await cloudWipeAllStudentProgress();
+            if(wipeAll.ok){
+              cloudCleared=true;
+            }else{
+              clearError=wipeAll.error||clearError;
+            }
+          }
+          if(!cloudCleared){
+            const studentIds=await cloudFetchStudentIds();
+            const wipeById=await cloudWipeStudentsByIds(studentIds);
+            if(wipeById.ok){
+              cloudCleared=true;
+            }else{
+              clearError=wipeById.error||clearError;
+            }
+          }
+          if(!cloudCleared){
+            APP.cloudStatus=`Cloud error: ${shortCloudError(clearError)} (clear failed)`;
+            go('tutor_dash');
+            toast('Cloud clear failed');
             return;
           }
-          cloudWipeAllStudentProgress().then(fallback=>{
-            if(!fallback.ok){
-              APP.cloudStatus=`Cloud error: ${shortCloudError(result.error||fallback.error)} (clear failed)`;
-              go('tutor_dash');
-              toast('Cloud clear failed');
-              return;
-            }
-            clearLocally().catch(()=>toast('Could not finish local cleanup'));
-          });
+          await clearLocally().catch(()=>toast('Could not finish local cleanup'));
+          await fetchLeaderboard().catch(()=>{});
+          if(APP.leaderboard.length>0){
+            APP.cloudStatus='Cloud clear partial (hidden locally)';
+          }
+          APP.leaderboard=[];
+          go('tutor_dash');
         });
         break;
       }
