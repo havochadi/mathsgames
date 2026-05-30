@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alya's Weight Adventure</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & TOKENS ──────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#FFF8E7;--coral:#FF6B6B;--mint:#6BCB77;
+  --sky:#4D96FF;--sun:#FFD93D;--plum:#6A4C93;--ink:#2D2D2D;
+  --shadow:0 6px 0 var(--ink);
+}
+body{font-family:'Fredoka',sans-serif;background:var(--cream);
+  background-image:radial-gradient(circle at 10% 20%,rgba(255,217,61,.15) 0%,transparent 40%),
+                   radial-gradient(circle at 90% 80%,rgba(107,203,119,.15) 0%,transparent 40%);
+  min-height:100vh;color:var(--ink)}
+.screen{max-width:480px;margin:0 auto;padding:16px;min-height:100vh}
+
+/* ── NAV ── */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:8px 0 14px}
+.nav-back{background:white;border:3px solid var(--ink);border-radius:12px;padding:6px 14px;
+  font-family:'Fredoka',sans-serif;font-weight:600;font-size:14px;cursor:pointer;
+  box-shadow:0 3px 0 var(--ink)}
+.nav-back:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.nav-title{font-family:'Caveat',cursive;font-size:24px;color:var(--plum);font-weight:700}
+.nav-timer{background:var(--plum);color:white;padding:6px 12px;border-radius:12px;
+  font-size:13px;font-weight:600;border:2px solid var(--ink)}
+
+/* ── STUDENT HOME ── */
+.home-header{text-align:center;padding:20px 0 14px}
+.home-title{font-family:'Caveat',cursive;font-size:46px;color:var(--plum);
+  line-height:1;transform:rotate(-2deg);display:inline-block}
+.home-sub{font-size:14px;opacity:.65;margin-top:6px}
+.cheat-bar{background:var(--sky);color:white;padding:10px 16px;border-radius:14px;
+  margin-bottom:16px;text-align:center;font-size:14px;font-weight:500;
+  border:3px solid var(--ink);box-shadow:0 3px 0 var(--ink)}
+.cheat-bar strong{font-family:'Caveat',cursive;font-size:22px}
+.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.menu-card{background:white;border:4px solid var(--ink);border-radius:24px;
+  padding:22px 14px;text-align:center;cursor:pointer;box-shadow:var(--shadow)}
+.menu-card:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink)}
+.menu-card.practice{border-color:var(--mint);box-shadow:0 6px 0 #4aaa56}
+.menu-card.test{border-color:var(--coral);box-shadow:0 6px 0 #cc4444}
+.menu-emoji{font-size:50px;display:block;margin-bottom:8px}
+.menu-name{font-weight:700;font-size:20px;margin-bottom:3px}
+.menu-desc{font-size:12px;opacity:.65}
+
+/* ── PRACTICE ── */
+.levels{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.level-btn{border:3px solid var(--ink);background:white;padding:9px 4px;
+  border-radius:14px;font-family:'Fredoka',sans-serif;font-weight:600;font-size:13px;
+  cursor:pointer;box-shadow:0 3px 0 var(--ink)}
+.level-btn.active{background:var(--sun)}
+.level-btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.lvl-num{display:block;font-size:10px;opacity:.65}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
+.mode-btn{border:2px solid var(--ink);background:white;padding:8px 4px;
+  border-radius:12px;font-family:'Fredoka',sans-serif;font-weight:500;font-size:11px;
+  cursor:pointer;box-shadow:0 2px 0 var(--ink);text-align:center}
+.mode-btn.active{background:var(--mint);color:white}
+.mode-btn:active{transform:translateY(1px);box-shadow:0 1px 0 var(--ink)}
+.mode-emoji{font-size:18px;display:block;margin-bottom:2px}
+.review-bar{display:flex;justify-content:space-between;align-items:center;
+  background:white;border:2px solid var(--ink);border-radius:14px;padding:8px 14px;margin-bottom:12px}
+.review-bar-info{font-size:13px;font-weight:600}
+.review-bar-btn{background:var(--plum);color:white;border:none;border-radius:10px;
+  padding:6px 14px;font-family:'Fredoka',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
+
+/* ── QUESTION CARD ── */
+.card{background:white;border:4px solid var(--ink);border-radius:24px;
+  padding:24px 20px;box-shadow:var(--shadow);margin-bottom:14px;
+  position:relative;min-height:250px}
+.card-badge{position:absolute;top:-14px;left:20px;background:var(--coral);color:white;
+  padding:4px 14px;border-radius:20px;font-weight:600;font-size:13px;border:3px solid var(--ink)}
+.q-text{text-align:center;font-size:18px;font-weight:500;line-height:1.5;margin:14px 0}
+.highlight{background:var(--sun);padding:2px 10px;border-radius:8px;font-weight:700;display:inline-block}
+.answer-area{display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 0}
+.answer-input{width:110px;padding:12px;border:3px solid var(--ink);border-radius:14px;
+  font-family:'Fredoka',sans-serif;font-size:22px;font-weight:600;text-align:center;
+  background:var(--cream);color:var(--ink)}
+.answer-input:focus{outline:none;background:white;box-shadow:0 0 0 4px var(--sun)}
+.unit-label{font-size:20px;font-weight:600;color:var(--plum)}
+.submit-btn{width:100%;background:var(--coral);color:white;border:3px solid var(--ink);
+  border-radius:18px;padding:14px;font-family:'Fredoka',sans-serif;font-weight:600;
+  font-size:18px;cursor:pointer;box-shadow:0 4px 0 var(--ink);margin-top:10px}
+.submit-btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--ink)}
+.feedback{text-align:center;padding:14px;border-radius:16px;margin-top:12px;
+  font-size:16px;font-weight:600;animation:pop .3s ease-out}
+.feedback.ok{background:var(--mint);color:white;border:3px solid var(--ink)}
+.feedback.no{background:#FFE0E0;color:var(--coral);border:3px solid var(--coral)}
+.hint{margin-top:8px;font-size:13px;background:white;color:var(--ink);
+  padding:8px;border-radius:10px;font-weight:500}
+@keyframes pop{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+
+/* ── COMPARE ── */
+.compare-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin:10px 0}
+.cmp-item{background:var(--cream);border:3px solid var(--ink);border-radius:16px;
+  padding:14px 8px;text-align:center;cursor:pointer}
+.cmp-item:active{transform:scale(.96)}
+.cmp-item.picked{background:var(--mint);color:white}
+.cmp-emoji{font-size:36px;display:block;margin-bottom:4px}
+.cmp-weight{font-weight:600;font-size:15px}
+.vs{font-family:'Caveat',cursive;font-size:28px;color:var(--coral);font-weight:700}
+
+/* ── ITEM ── */
+.item-display{text-align:center;margin:6px 0}
+.item-emoji{font-size:60px;display:inline-block;animation:bob 2s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.item-name{font-size:15px;font-weight:600;color:var(--plum);margin-top:2px}
+.scale-wrap{display:flex;justify-content:center;margin:8px 0;height:118px}
+
+/* ── TEST MENU ── */
+.test-grid{display:flex;flex-direction:column;gap:12px;margin-top:6px}
+.test-card{background:white;border:4px solid var(--ink);border-radius:20px;
+  padding:16px;cursor:pointer;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px}
+.test-card:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink)}
+.test-emoji{font-size:40px;flex-shrink:0}
+.test-name{font-weight:700;font-size:18px}
+.test-desc{font-size:12px;opacity:.65;margin-top:2px}
+.test-meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.tag{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;border:2px solid var(--ink)}
+.tag.easy{background:#D4EDDA}.tag.medium{background:#FFF3CD}.tag.hard{background:#FFE0E0}
+
+/* ── TEST ACTIVE ── */
+.t-progress{margin-bottom:12px}
+.t-bar{height:12px;background:#eee;border-radius:20px;border:2px solid var(--ink);overflow:hidden}
+.t-bar-fill{height:100%;background:var(--mint);border-radius:20px;transition:width .4s}
+.t-bar-label{display:flex;justify-content:space-between;font-size:12px;margin-top:4px;font-weight:600;opacity:.75}
+
+/* ── TEST RESULTS ── */
+.results-card{background:white;border:4px solid var(--ink);border-radius:24px;
+  padding:22px 20px;text-align:center;box-shadow:var(--shadow);margin-bottom:16px}
+.score-big{font-family:'Caveat',cursive;font-size:72px;font-weight:700;color:var(--plum);line-height:1}
+.score-sub{font-size:15px;opacity:.7;margin-top:4px}
+.res-emoji{font-size:58px;margin:10px 0}
+.res-msg{font-size:17px;font-weight:600;margin-bottom:8px}
+.breakdown{display:flex;gap:10px;justify-content:center;margin:10px 0}
+.chip{padding:8px 14px;border-radius:14px;font-size:14px;font-weight:600;border:2px solid var(--ink)}
+.chip.ok{background:var(--mint);color:white}.chip.no{background:var(--coral);color:white}
+.act-row{display:flex;gap:10px;margin-top:10px}
+.act-btn{flex:1;padding:13px;border:3px solid var(--ink);border-radius:16px;
+  font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;cursor:pointer;
+  box-shadow:0 4px 0 var(--ink)}
+.act-btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--ink)}
+.act-btn.primary{background:var(--mint);color:white}.act-btn.secondary{background:white}
+
+/* ── SHARED REVIEW ── */
+.rev-item{background:white;border:3px solid var(--ink);border-radius:18px;padding:14px;margin-bottom:10px}
+.rev-item.ok{border-color:var(--mint)}.rev-item.no{border-color:var(--coral)}
+.rev-q{font-size:15px;font-weight:500;margin-bottom:8px;line-height:1.4}
+.rev-answers{display:flex;gap:8px;flex-wrap:wrap}
+.rev-chip{padding:6px 12px;border-radius:10px;font-size:13px;font-weight:600;border:2px solid var(--ink)}
+.rev-user.ok{background:#D4EDDA}.rev-user.no{background:#FFE0E0}.rev-correct{background:#D4EDDA}
+.rev-hint{margin-top:6px;font-size:12px;opacity:.65;font-style:italic}
+.rev-icon{float:right;font-size:20px}
+.rev-qnum{font-size:11px;font-weight:700;opacity:.4;margin-bottom:4px}
+
+/* ── PIN PAD ── */
+.pin-wrap{text-align:center;padding:28px 20px 20px}
+.pin-title{font-family:'Caveat',cursive;font-size:38px;color:var(--plum);margin-bottom:6px}
+.pin-sub{font-size:14px;opacity:.6;margin-bottom:28px}
+.pin-dots{display:flex;justify-content:center;gap:16px;margin-bottom:28px}
+.pin-dot{width:22px;height:22px;border-radius:50%;border:3px solid var(--plum);
+  background:white;transition:background .12s,border-color .12s}
+.pin-dot.filled{background:var(--plum)}
+.pin-dot.error{border-color:var(--coral)!important;background:var(--coral)!important}
+.pin-dots.shake{animation:shake .5s ease}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:250px;margin:0 auto}
+.pin-btn{background:white;border:3px solid var(--ink);border-radius:16px;
+  padding:15px 8px;font-family:'Fredoka',sans-serif;font-size:24px;font-weight:600;
+  cursor:pointer;box-shadow:0 4px 0 var(--ink);min-height:58px}
+.pin-btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--ink)}
+.pin-btn.del{background:#FFF0EE;font-size:20px}
+.pin-btn.ghost{background:transparent;border:none;box-shadow:none;cursor:default;pointer-events:none}
+.pin-hint{margin-top:20px;font-size:12px;opacity:.35}
+
+/* ── TUTOR DASHBOARD ── */
+.t-header{background:var(--plum);color:white;
+  margin:-16px -16px 16px;padding:16px 16px 20px;
+  border-radius:0 0 28px 28px;border-bottom:4px solid #4D2C5E}
+.t-hdr-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.t-hdr-title{font-family:'Caveat',cursive;font-size:30px;font-weight:700}
+.t-logout{background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.4);
+  color:white;border-radius:12px;padding:6px 14px;
+  font-family:'Fredoka',sans-serif;font-size:13px;cursor:pointer}
+.t-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.t-stat{background:rgba(255,255,255,.15);border-radius:14px;padding:10px;text-align:center}
+.t-stat-n{font-size:26px;font-weight:700;font-family:'Caveat',cursive;line-height:1.1}
+.t-stat-l{font-size:11px;opacity:.85;margin-top:2px}
+.t-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.t-tab{background:white;border:3px solid var(--ink);border-radius:14px;padding:10px 4px;
+  font-family:'Fredoka',sans-serif;font-weight:600;font-size:13px;cursor:pointer;
+  box-shadow:0 3px 0 var(--ink);text-align:center}
+.t-tab.active{background:var(--plum);color:white;box-shadow:0 3px 0 #4D2C5E}
+.t-tab:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+
+/* Tutor session rows */
+.sess-item{background:white;border:2px solid var(--ink);border-radius:14px;
+  padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start}
+.sess-type{font-weight:600;font-size:14px}
+.sess-type.practice{color:var(--mint)}.sess-type.test{color:var(--coral)}
+.sess-date{font-size:11px;opacity:.55;margin-top:2px}
+.sess-extra{font-size:11px;color:var(--plum);margin-top:2px;font-weight:500}
+.sess-right{text-align:right;flex-shrink:0;margin-left:8px}
+.sess-dur{font-weight:600;font-size:13px;color:var(--plum)}
+.sess-score{font-size:11px;opacity:.7;margin-top:2px}
+.no-data{text-align:center;opacity:.4;padding:24px;font-size:14px}
+
+/* Tutor attempt rows */
+.att-item{background:white;border:3px solid var(--ink);border-radius:16px;
+  padding:12px 14px;margin-bottom:10px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
+.att-item:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.att-row1{display:flex;justify-content:space-between;align-items:center}
+.att-name{font-weight:700;font-size:16px}
+.att-score{font-weight:700;font-size:16px;color:var(--plum)}
+.att-row2{display:flex;justify-content:space-between;margin-top:5px;font-size:12px;opacity:.65}
+.att-view{color:var(--sky);font-weight:600}
+.score-bar{height:7px;background:#eee;border-radius:10px;margin-top:7px;
+  border:1px solid #ddd;overflow:hidden}
+.score-fill{height:100%;border-radius:10px;transition:width .3s}
+
+/* Tutor settings */
+.set-card{background:white;border:3px solid var(--ink);border-radius:16px;padding:16px;margin-bottom:12px}
+.set-label{font-weight:700;font-size:14px;margin-bottom:6px;color:var(--plum)}
+.set-sub{font-size:13px;opacity:.65;margin-bottom:10px}
+.set-input{width:100%;padding:10px;border:2px solid var(--ink);border-radius:12px;
+  font-family:'Fredoka',sans-serif;font-size:20px;text-align:center;letter-spacing:8px;background:var(--cream)}
+.set-input:focus{outline:none;background:white;box-shadow:0 0 0 3px var(--sun)}
+.danger-btn{background:#FFE0E0;border:3px solid var(--coral);color:var(--coral);
+  border-radius:14px;padding:12px;width:100%;font-family:'Fredoka',sans-serif;
+  font-weight:600;font-size:15px;cursor:pointer;box-shadow:0 4px 0 #cc4444}
+.danger-btn:active{transform:translateY(2px);box-shadow:0 2px 0 #cc4444}
+
+/* ── CELEBRATION ── */
+.celebrate{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-size:110px;pointer-events:none;z-index:100;animation:cel 1.2s ease-out forwards}
+@keyframes cel{0%{transform:translate(-50%,-50%) scale(0) rotate(-20deg);opacity:0}
+  50%{transform:translate(-50%,-50%) scale(1.4) rotate(10deg);opacity:1}
+  100%{transform:translate(-50%,-50%) scale(1) rotate(0);opacity:0}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+'use strict';
+
+// ================================================================
+// DATA ▸ ITEMS  — extend this array to add real-life items
+// ================================================================
+const ITEMS=[
+  {emoji:'🍎',name:'an apple',weight:200,unit:'g'},
+  {emoji:'🍌',name:'a banana',weight:120,unit:'g'},
+  {emoji:'🥚',name:'an egg',weight:50,unit:'g'},
+  {emoji:'📕',name:'a textbook',weight:500,unit:'g'},
+  {emoji:'🎒',name:'a school bag',weight:3,unit:'kg'},
+  {emoji:'🐱',name:'a cat',weight:4,unit:'kg'},
+  {emoji:'🐕',name:'a dog',weight:15,unit:'kg'},
+  {emoji:'🍉',name:'a watermelon',weight:5,unit:'kg'},
+  {emoji:'🥔',name:'a potato',weight:150,unit:'g'},
+  {emoji:'🍞',name:'a loaf of bread',weight:400,unit:'g'},
+  {emoji:'🧴',name:'a shampoo bottle',weight:750,unit:'g'},
+  {emoji:'⚽',name:'a football',weight:450,unit:'g'},
+  {emoji:'💻',name:'a laptop',weight:2,unit:'kg'},
+  {emoji:'🍇',name:'a bunch of grapes',weight:300,unit:'g'},
+  {emoji:'🥕',name:'a carrot',weight:80,unit:'g'},
+];
+
+// ================================================================
+// DATA ▸ TESTS  — add new test objects here; each question is
+//   { id, type:'number'|'compare', text(HTML), answer, unit, hint }
+//   or for compare: { ..., optA:{label,emoji,weightG}, optB:{...}, answer:'A'|'B' }
+// ================================================================
+const TESTS=[
+  {
+    id:'test_starter',name:'Starter Quiz',emoji:'🌱',
+    desc:'Whole number conversions only',difficulty:'easy',
+    questions:[
+      {id:'s1',type:'number',text:'How many <b>grams</b> is <b>2 kg</b>?',answer:2000,unit:'g',hint:'2 × 1000 = 2000 g'},
+      {id:'s2',type:'number',text:'How many <b>grams</b> is <b>5 kg</b>?',answer:5000,unit:'g',hint:'5 × 1000 = 5000 g'},
+      {id:'s3',type:'number',text:'How many <b>kg</b> is <b>3000 g</b>?',answer:3,unit:'kg',hint:'3000 ÷ 1000 = 3 kg'},
+      {id:'s4',type:'number',text:'How many <b>kg</b> is <b>8000 g</b>?',answer:8,unit:'kg',hint:'8000 ÷ 1000 = 8 kg'},
+      {id:'s5',type:'compare',text:'Which is heavier?',
+        optA:{label:'4 kg',emoji:'📦',weightG:4000},optB:{label:'3500 g',emoji:'📦',weightG:3500},
+        answer:'A',hint:'4 kg = 4000 g > 3500 g'},
+      {id:'s6',type:'compare',text:'Which is heavier?',
+        optA:{label:'2000 g',emoji:'⚖️',weightG:2000},optB:{label:'1 kg',emoji:'⚖️',weightG:1000},
+        answer:'A',hint:'2000 g = 2 kg > 1 kg'},
+      {id:'s7',type:'number',text:'One egg ≈ <b>50 g</b>. How many <b>grams</b> are <b>4 eggs</b>?',answer:200,unit:'g',hint:'4 × 50 = 200 g'},
+      {id:'s8',type:'number',text:'A cat weighs <b>3 kg</b>. How many <b>grams</b>?',answer:3000,unit:'g',hint:'3 × 1000 = 3000 g'},
+    ]
+  },
+  {
+    id:'test_mixed',name:'Mixed Measures',emoji:'⚖️',
+    desc:'Decimals & half-kg values',difficulty:'medium',
+    questions:[
+      {id:'m1',type:'number',text:'How many <b>grams</b> is <b>1.5 kg</b>?',answer:1500,unit:'g',hint:'1.5 × 1000 = 1500 g'},
+      {id:'m2',type:'number',text:'How many <b>grams</b> is <b>2.5 kg</b>?',answer:2500,unit:'g',hint:'2.5 × 1000 = 2500 g'},
+      {id:'m3',type:'number',text:'How many <b>kg</b> is <b>1500 g</b>?',answer:1.5,unit:'kg',hint:'1500 ÷ 1000 = 1.5 kg'},
+      {id:'m4',type:'number',text:'How many <b>kg</b> is <b>2500 g</b>?',answer:2.5,unit:'kg',hint:'2500 ÷ 1000 = 2.5 kg'},
+      {id:'m5',type:'compare',text:'Which is heavier?',
+        optA:{label:'1.5 kg',emoji:'📦',weightG:1500},optB:{label:'1800 g',emoji:'📦',weightG:1800},
+        answer:'B',hint:'1.5 kg = 1500 g < 1800 g'},
+      {id:'m6',type:'compare',text:'Which is heavier?',
+        optA:{label:'3500 g',emoji:'📦',weightG:3500},optB:{label:'3 kg',emoji:'📦',weightG:3000},
+        answer:'A',hint:'3 kg = 3000 g < 3500 g'},
+      {id:'m7',type:'number',text:'Bag = <b>2.5 kg</b> + book = <b>800 g</b>. Total in <b>kg</b>?',answer:3.3,unit:'kg',hint:'2.5 + 0.8 = 3.3 kg'},
+      {id:'m8',type:'number',text:'4 apples × <b>250 g</b> each. Total in <b>kg</b>?',answer:1,unit:'kg',hint:'4 × 250 = 1000 g = 1 kg'},
+      {id:'m9',type:'compare',text:'Which is heavier?',
+        optA:{label:'2.25 kg',emoji:'📦',weightG:2250},optB:{label:'2200 g',emoji:'📦',weightG:2200},
+        answer:'A',hint:'2.25 kg = 2250 g > 2200 g'},
+      {id:'m10',type:'number',text:'A dog weighs <b>8 kg</b>. How many <b>grams</b>?',answer:8000,unit:'g',hint:'8 × 1000 = 8000 g'},
+    ]
+  },
+  {
+    id:'test_realworld',name:'Real World',emoji:'🌍',
+    desc:'Everyday object challenges',difficulty:'medium',
+    questions:[
+      {id:'r1',type:'number',text:'A watermelon weighs <b>5 kg</b>. How many <b>grams</b>?',answer:5000,unit:'g',hint:'5 × 1000 = 5000 g'},
+      {id:'r2',type:'number',text:'A loaf of bread weighs <b>400 g</b>. How many <b>kg</b>?',answer:0.4,unit:'kg',hint:'400 ÷ 1000 = 0.4 kg'},
+      {id:'r3',type:'number',text:'3 books × <b>500 g</b> each. Total in <b>kg</b>?',answer:1.5,unit:'kg',hint:'3 × 500 = 1500 g = 1.5 kg'},
+      {id:'r4',type:'number',text:'School bag = <b>3 kg</b>, bottle = <b>500 g</b>. Total in <b>grams</b>?',answer:3500,unit:'g',hint:'3000 + 500 = 3500 g'},
+      {id:'r5',type:'number',text:'A potato ≈ <b>150 g</b>. How many <b>grams</b> are <b>8</b>?',answer:1200,unit:'g',hint:'8 × 150 = 1200 g'},
+      {id:'r6',type:'number',text:'Laptop <b>2 kg</b> + charger <b>500 g</b>. Total in <b>kg</b>?',answer:2.5,unit:'kg',hint:'2 + 0.5 = 2.5 kg'},
+      {id:'r7',type:'number',text:'Dog (<b>15 kg</b>) + cat (<b>4 kg</b>). Combined in <b>grams</b>?',answer:19000,unit:'g',hint:'19 × 1000 = 19000 g'},
+      {id:'r8',type:'number',text:'10 eggs × <b>50 g</b> each. Total in <b>kg</b>?',answer:0.5,unit:'kg',hint:'500 g ÷ 1000 = 0.5 kg'},
+    ]
+  },
+  {
+    id:'test_challenge',name:'Big Challenge',emoji:'🏆',
+    desc:'Complex & multi-step problems',difficulty:'hard',
+    questions:[
+      {id:'c1',type:'number',text:'How many <b>grams</b> is <b>3.75 kg</b>?',answer:3750,unit:'g',hint:'3.75 × 1000 = 3750 g'},
+      {id:'c2',type:'number',text:'How many <b>kg</b> is <b>4250 g</b>?',answer:4.25,unit:'kg',hint:'4250 ÷ 1000 = 4.25 kg'},
+      {id:'c3',type:'compare',text:'Which is heavier?',
+        optA:{label:'3.75 kg',emoji:'📦',weightG:3750},optB:{label:'3800 g',emoji:'📦',weightG:3800},
+        answer:'B',hint:'3.75 kg = 3750 g < 3800 g'},
+      {id:'c4',type:'number',text:'6 bananas × <b>120 g</b>. Total in <b>kg</b>?',answer:0.72,unit:'kg',hint:'720 g ÷ 1000 = 0.72 kg'},
+      {id:'c5',type:'number',text:'Bag = <b>1.5 kg</b> + 3 books × <b>500 g</b>. Total in <b>kg</b>?',answer:3,unit:'kg',hint:'1.5 + 1.5 = 3 kg'},
+      {id:'c6',type:'number',text:'How many <b>kg</b> is <b>1200 g</b>?',answer:1.2,unit:'kg',hint:'1200 ÷ 1000 = 1.2 kg'},
+      {id:'c7',type:'compare',text:'Which is heavier?',
+        optA:{label:'2.8 kg',emoji:'📦',weightG:2800},optB:{label:'2750 g',emoji:'📦',weightG:2750},
+        answer:'A',hint:'2.8 kg = 2800 g > 2750 g'},
+      {id:'c8',type:'number',text:'Need <b>1.25 kg</b> flour. Have <b>900 g</b>. How many more <b>grams</b>?',answer:350,unit:'g',hint:'1250 − 900 = 350 g'},
+      {id:'c9',type:'number',text:'<b>4 kg</b> minus <b>750 g</b>. Answer in <b>grams</b>?',answer:3250,unit:'g',hint:'4000 − 750 = 3250 g'},
+      {id:'c10',type:'number',text:'5 bottles × <b>750 g</b> each. Total in <b>kg</b>?',answer:3.75,unit:'kg',hint:'3750 g ÷ 1000 = 3.75 kg'},
+      {id:'c11',type:'number',text:'<b>3.2 kg</b> + <b>800 g</b> = ? <b>kg</b>',answer:4,unit:'kg',hint:'3.2 + 0.8 = 4 kg'},
+      {id:'c12',type:'number',text:'Crate = <b>2.5 kg</b>. Remove 3 items × <b>200 g</b>. New weight in <b>kg</b>?',answer:1.9,unit:'kg',hint:'2.5 − 0.6 = 1.9 kg'},
+    ]
+  }
+];
+
+// ================================================================
+// APP STATE
+// ================================================================
+const APP={
+  screen:'home',
+  // Student data (persisted)
+  sessions:[],
+  testAttempts:[],
+  // Live session
+  sessionStart:null,sessionType:null,timerTick:null,
+  // Practice
+  practice:{mode:'convert',level:1,qNum:1,currentQ:null,answered:false,history:[]},
+  // Test
+  test:{id:null,questions:[],current:0,answers:[]},
+  // Review
+  review:{source:null,items:[],backTo:'home'},
+  // Tutor
+  tutorAuth:false,
+  tutorTab:'sessions',  // 'sessions' | 'tests' | 'settings'
+  tutorPin:'1234',
+  pinBuffer:'',
+  selectedAttempt:null,
+};
+
+// ================================================================
+// STORAGE KEYS — change these if you need multiple student profiles
+// ================================================================
+const KEY_SESSIONS ='alya_sessions_v3';
+const KEY_ATTEMPTS ='alya_attempts_v3';
+const KEY_PIN      ='alya_tutor_pin_v1';
+
+async function loadAll(){
+  try{const r=await window.storage.get(KEY_SESSIONS);if(r?.value)APP.sessions=JSON.parse(r.value);}catch{}
+  try{const r=await window.storage.get(KEY_ATTEMPTS);if(r?.value)APP.testAttempts=JSON.parse(r.value);}catch{}
+  try{const r=await window.storage.get(KEY_PIN);if(r?.value)APP.tutorPin=r.value;}catch{}
+}
+async function saveSessions(){
+  try{await window.storage.set(KEY_SESSIONS,JSON.stringify(APP.sessions.slice(-100)));}catch{}
+}
+async function appendAttempt(a){
+  APP.testAttempts.push(a);
+  try{await window.storage.set(KEY_ATTEMPTS,JSON.stringify(APP.testAttempts.slice(-200)));}catch{}
+}
+async function saveTutorPin(pin){
+  APP.tutorPin=pin;
+  try{await window.storage.set(KEY_PIN,pin);}catch{}
+}
+
+// ================================================================
+// SESSION TRACKING
+// ================================================================
+function startSession(type){
+  APP.sessionStart=Date.now();APP.sessionType=type;
+  clearInterval(APP.timerTick);
+  APP.timerTick=setInterval(()=>{
+    const el=document.getElementById('sessTimer');
+    if(el&&APP.sessionStart)el.textContent=fmtDur(Math.floor((Date.now()-APP.sessionStart)/1000));
+  },1000);
+}
+async function endSession(extra={}){
+  if(!APP.sessionStart)return;
+  clearInterval(APP.timerTick);
+  const dur=Math.floor((Date.now()-APP.sessionStart)/1000);
+  APP.sessions.push({id:'s'+Date.now(),
+    start:new Date(APP.sessionStart).toISOString(),
+    end:new Date().toISOString(),
+    duration:dur,type:APP.sessionType,...extra});
+  APP.sessionStart=null;APP.sessionType=null;
+  await saveSessions();
+}
+
+// ── Helpers ──
+const ri=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const pick=arr=>arr[ri(0,arr.length-1)];
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+function fmtDur(s){
+  if(s<60)return s+'s';const m=Math.floor(s/60),r=s%60;
+  if(m<60)return m+'m'+(r?' '+r+'s':'');
+  return Math.floor(m/60)+'h '+(m%60)+'m';
+}
+function fmtDate(iso){
+  const d=new Date(iso),df=Date.now()-d;
+  if(df<60000)return 'Just now';
+  if(df<3600000)return Math.floor(df/60000)+'m ago';
+  if(df<86400000)return Math.floor(df/3600000)+'h ago';
+  if(df<172800000)return 'Yesterday';
+  return d.toLocaleDateString('en-SG',{day:'numeric',month:'short'})
+    +' '+d.toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ================================================================
+// ROUTER
+// ================================================================
+function go(screen){APP.screen=screen;render();}
+function render(){
+  const map={
+    home:sHome,practice:sPractice,
+    test_menu:sTestMenu,test_active:sTestActive,
+    test_results:sTestResults,review:sReview,
+    tutor_login:sTutorLogin,tutor_dash:sTutorDash,
+    tutor_test_detail:sTutorTestDetail,
+  };
+  document.getElementById('app').innerHTML=(map[APP.screen]||sHome)();
+  if(APP.screen==='practice')renderPracticeQ();
+  if(APP.screen==='test_active')setTimeout(()=>{const i=document.getElementById('qInput');if(i)i.focus();},40);
+}
+
+// ================================================================
+// ── STUDENT SCREENS ──────────────────────────────────────────────
+// ================================================================
+
+function sHome(){
+  return `
+<div class="screen">
+  <div class="home-header">
+    <div class="home-title">Alya's Weight Adventure</div>
+    <div class="home-sub">Grams &amp; Kilograms 🍎⚖️</div>
+  </div>
+  <div class="cheat-bar"><strong>Remember!</strong> 1 kg = 1000 g</div>
+  <div class="menu-grid">
+    <div class="menu-card practice" data-a="go-practice">
+      <span class="menu-emoji">✏️</span>
+      <div class="menu-name">Practice</div>
+      <div class="menu-desc">Learn at your own pace</div>
+    </div>
+    <div class="menu-card test" data-a="go-test-menu">
+      <span class="menu-emoji">📝</span>
+      <div class="menu-name">Test</div>
+      <div class="menu-desc">Take a scored quiz</div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:50px">
+    <button style="background:none;border:none;font-family:'Fredoka',sans-serif;font-size:12px;opacity:.28;cursor:pointer;color:var(--ink);letter-spacing:.5px"
+      data-a="go-tutor">👩‍🏫 Tutor Access</button>
+  </div>
+</div>`;
+}
+
+function sPractice(){
+  const p=APP.practice,cor=p.history.filter(x=>x.correct).length;
+  return `
+<div class="screen">
+  <div class="nav">
+    <button class="nav-back" data-a="back-home">← Home</button>
+    <div class="nav-title">Practice</div>
+    <div class="nav-timer" id="sessTimer">0s</div>
+  </div>
+  <div class="levels">
+    ${[1,2,3].map(l=>`<button class="level-btn${p.level===l?' active':''}" data-a="set-level" data-val="${l}">
+      <span class="lvl-num">LEVEL ${l}</span>${['Easy','Medium','Hard'][l-1]}</button>`).join('')}
+  </div>
+  <div class="modes">
+    ${[['convert','🔄','Convert'],['compare','⚖️','Compare'],['reallife','🍎','Real Life']].map(([m,e,n])=>
+      `<button class="mode-btn${p.mode===m?' active':''}" data-a="set-mode" data-val="${m}">
+        <span class="mode-emoji">${e}</span>${n}</button>`).join('')}
+  </div>
+  <div class="review-bar" id="revBar" style="${p.history.length===0?'display:none':''}">
+    <div class="review-bar-info" id="revInfo">✅ ${cor}/${p.history.length} correct</div>
+    <button class="review-bar-btn" data-a="go-review-practice">Review</button>
+  </div>
+  <div id="practiceCard"></div>
+</div>`;
+}
+
+function renderPracticeQ(){
+  const gens={convert:genConvert,compare:genCompare,reallife:genRealLife};
+  const p=APP.practice;
+  p.currentQ=gens[p.mode]();p.answered=false;
+  const card=document.getElementById('practiceCard');if(!card)return;
+  card.innerHTML=`
+    <div class="card">
+      <div class="card-badge">Q ${p.qNum}</div>
+      ${qBody(p.currentQ)}
+    </div>
+    <div id="pFeed"></div>`;
+  const i=document.getElementById('qInput');if(i)i.focus();
+}
+
+function sTestMenu(){
+  return `
+<div class="screen">
+  <div class="nav">
+    <button class="nav-back" data-a="back-home">← Home</button>
+    <div class="nav-title">Choose a Test</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="test-grid">
+    ${TESTS.map(t=>`
+      <div class="test-card" data-a="start-test" data-val="${t.id}">
+        <div class="test-emoji">${t.emoji}</div>
+        <div>
+          <div class="test-name">${t.name}</div>
+          <div class="test-desc">${t.desc}</div>
+          <div class="test-meta">
+            <span class="tag ${t.difficulty}">${cap(t.difficulty)}</span>
+            <span class="tag" style="background:#f0f0f0">${t.questions.length} questions</span>
+          </div>
+        </div>
+      </div>`).join('')}
+  </div>
+</div>`;
+}
+
+function sTestActive(){
+  const t=APP.test,q=t.questions[t.current];
+  const pct=Math.round(t.current/t.questions.length*100);
+  const obj=TESTS.find(x=>x.id===t.id);
+  return `
+<div class="screen">
+  <div class="nav">
+    <button class="nav-back" data-a="abandon-test">✕ Quit</button>
+    <div class="nav-title">${obj?.name||'Test'}</div>
+    <div class="nav-timer" id="sessTimer">0s</div>
+  </div>
+  <div class="t-progress">
+    <div class="t-bar"><div class="t-bar-fill" style="width:${pct}%"></div></div>
+    <div class="t-bar-label">
+      <span>Q ${t.current+1} / ${t.questions.length}</span>
+      <span>${t.answers.filter(a=>a.correct).length} correct</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-badge">Q ${t.current+1}</div>
+    ${qBody(q)}
+  </div>
+</div>`;
+}
+
+function sTestResults(){
+  const t=APP.test,obj=TESTS.find(x=>x.id===t.id);
+  const score=t.answers.filter(a=>a.correct).length,total=t.questions.length;
+  const pct=Math.round(score/total*100);
+  const [emoji,msg]=pct>=90?['🏆',"Outstanding! You're a weight wizard!"]
+    :pct>=70?['🌟','Great job! Keep it up!']
+    :pct>=50?['💪','Good effort! Review and try again!']
+    :['📚',"Keep practising — you'll get there!"];
+  return `
+<div class="screen">
+  <div class="nav">
+    <button class="nav-back" data-a="back-test-menu">← Tests</button>
+    <div class="nav-title">Results</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="results-card">
+    <div class="score-big">${score}/${total}</div>
+    <div class="score-sub">${obj?.name} · ${pct}%</div>
+    <div class="res-emoji">${emoji}</div>
+    <div class="res-msg">${msg}</div>
+    <div class="breakdown">
+      <div class="chip ok">✅ ${score} correct</div>
+      <div class="chip no">❌ ${total-score} wrong</div>
+    </div>
+  </div>
+  <div class="act-row">
+    <button class="act-btn secondary" data-a="go-review-test">📋 Review Answers</button>
+    <button class="act-btn primary" data-a="retry-test">🔄 Try Again</button>
+  </div>
+  <button class="act-btn secondary" style="width:100%;margin-top:10px" data-a="back-test-menu">← Back to Tests</button>
+</div>`;
+}
+
+function sReview(){
+  const rv=APP.review;
+  const obj=rv.source==='test'?TESTS.find(x=>x.id===APP.test.id):null;
+  const title=rv.source==='practice'?'Practice Review':`${obj?.name||'Test'} Review`;
+  return `
+<div class="screen">
+  <div class="nav">
+    <button class="nav-back" data-a="back-from-review">← Back</button>
+    <div class="nav-title">${title}</div>
+    <div style="width:60px"></div>
+  </div>
+  ${rv.items.map((item,i)=>{
+    const q=item.q,ok=item.correct;
+    const uLabel=q.type==='compare'
+      ?(item.userAnswer==='A'?q.optA.label:q.optB.label):`${item.userAnswer} ${q.unit||''}`;
+    return `
+      <div class="rev-item ${ok?'ok':'no'}">
+        <div class="rev-icon">${ok?'✅':'❌'}</div>
+        <div class="rev-qnum">Q${i+1}</div>
+        <div class="rev-q">${q.text.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim()}</div>
+        <div class="rev-answers">
+          <div class="rev-chip rev-user ${ok?'ok':'no'}">Your answer: ${uLabel.trim()}</div>
+          ${!ok?`<div class="rev-chip rev-correct">Correct: ${fmtAns(q)}</div>`:''}
+        </div>
+        ${q.hint?`<div class="rev-hint">💡 ${q.hint}</div>`:''}
+      </div>`;
+  }).join('')}
+</div>`;
+}
+
+// ================================================================
+// ── TUTOR SCREENS ─────────────────────────────────────────────────
+// ================================================================
+
+function sTutorLogin(){
+  return `
+<div class="screen">
+  <div class="nav">
+    <button class="nav-back" data-a="back-home">← Back</button>
+    <div class="nav-title">Tutor Access</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="pin-wrap">
+    <div class="pin-title">🔐 Tutor Login</div>
+    <div class="pin-sub">Enter your 4-digit PIN to continue</div>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+    </div>
+    <div class="pin-pad">
+      ${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="pin-btn" data-a="pin-key" data-val="${n}">${n}</button>`).join('')}
+      <button class="pin-btn del" data-a="pin-del">⌫</button>
+      <button class="pin-btn" data-a="pin-key" data-val="0">0</button>
+      <div class="pin-btn ghost"></div>
+    </div>
+    <div class="pin-hint">Default PIN: 1234</div>
+  </div>
+</div>`;
+}
+
+function sTutorDash(){
+  const sess=[...APP.sessions].reverse();
+  const atts=[...APP.testAttempts].reverse();
+  const totalTime=APP.sessions.reduce((s,x)=>s+(x.duration||0),0);
+  const avgScore=APP.testAttempts.length
+    ?Math.round(APP.testAttempts.reduce((s,a)=>s+a.score/a.total*100,0)/APP.testAttempts.length)
+    :null;
+
+  // ── Tab content ──
+  let content='';
+  if(APP.tutorTab==='sessions'){
+    content=sess.length===0?`<div class="no-data">No sessions recorded yet.</div>`
+      :sess.map(s=>`
+        <div class="sess-item">
+          <div style="flex:1;min-width:0">
+            <div class="sess-type ${s.type}">${s.type==='practice'?'✏️ Practice':'📝 Test'+(s.testName?' · '+s.testName:'')}</div>
+            <div class="sess-date">${fmtDate(s.start)}${s.abandoned?' · abandoned':''}</div>
+            ${s.type==='practice'&&s.questionsAttempted!=null
+              ?`<div class="sess-extra">📋 ${s.questionsAttempted} Qs &nbsp;·&nbsp; ✅ ${s.correctAnswers||0} correct</div>`:''}
+          </div>
+          <div class="sess-right">
+            <div class="sess-dur">⏱ ${fmtDur(s.duration)}</div>
+            ${s.score!=null?`<div class="sess-score">Score: ${s.score}</div>`:''}
+          </div>
+        </div>`).join('');
+
+  }else if(APP.tutorTab==='tests'){
+    content=atts.length===0?`<div class="no-data">No tests completed yet.</div>`
+      :atts.map(a=>{
+        const pct=Math.round(a.score/a.total*100);
+        const col=pct>=80?'var(--mint)':pct>=50?'var(--sun)':'var(--coral)';
+        return `
+          <div class="att-item" data-a="view-attempt" data-val="${a.id}">
+            <div class="att-row1">
+              <div class="att-name">${TESTS.find(t=>t.id===a.testId)?.emoji||'📝'} ${a.testName}</div>
+              <div class="att-score">${a.score}/${a.total} <span style="font-size:12px;opacity:.65">(${pct}%)</span></div>
+            </div>
+            <div class="score-bar"><div class="score-fill" style="width:${pct}%;background:${col}"></div></div>
+            <div class="att-row2">
+              <span>${fmtDate(a.date)} · ⏱ ${fmtDur(a.duration)}</span>
+              <span class="att-view">View answers →</span>
+            </div>
+          </div>`;
+      }).join('');
+
+  }else{
+    content=`
+      <div class="set-card">
+        <div class="set-label">🔐 Change Tutor PIN</div>
+        <div class="set-sub">Enter a new 4-digit PIN and save.</div>
+        <input type="text" inputmode="numeric" maxlength="4" pattern="[0-9]{4}"
+          class="set-input" id="newPin" placeholder="••••"/>
+        <button class="submit-btn" style="background:var(--plum);margin-top:10px" data-a="save-pin">Save New PIN</button>
+      </div>
+      <div class="set-card">
+        <div class="set-label">🗑️ Clear All Student Data</div>
+        <div class="set-sub">Permanently removes all sessions and test records.</div>
+        <button class="danger-btn" data-a="clear-data">Clear All Data</button>
+      </div>`;
+  }
+
+  return `
+<div class="screen">
+  <div class="t-header">
+    <div class="t-hdr-row">
+      <div class="t-hdr-title">👩‍🏫 Tutor Dashboard</div>
+      <button class="t-logout" data-a="tutor-logout">Log out</button>
+    </div>
+    <div class="t-stats">
+      <div class="t-stat">
+        <div class="t-stat-n">${APP.sessions.length}</div>
+        <div class="t-stat-l">Total Sessions</div>
+      </div>
+      <div class="t-stat">
+        <div class="t-stat-n">${fmtDur(totalTime)||'0s'}</div>
+        <div class="t-stat-l">Total Time</div>
+      </div>
+      <div class="t-stat">
+        <div class="t-stat-n">${APP.testAttempts.length}</div>
+        <div class="t-stat-l">Tests Taken</div>
+      </div>
+      <div class="t-stat">
+        <div class="t-stat-n">${avgScore!==null?avgScore+'%':'—'}</div>
+        <div class="t-stat-l">Avg Score</div>
+      </div>
+    </div>
+  </div>
+  <div class="t-tabs">
+    <button class="t-tab${APP.tutorTab==='sessions'?' active':''}" data-a="t-tab" data-val="sessions">📋 Sessions</button>
+    <button class="t-tab${APP.tutorTab==='tests'?' active':''}" data-a="t-tab" data-val="tests">📝 Test Results</button>
+    <button class="t-tab${APP.tutorTab==='settings'?' active':''}" data-a="t-tab" data-val="settings">⚙️ Settings</button>
+  </div>
+  ${content}
+</div>`;
+}
+
+function sTutorTestDetail(){
+  const a=APP.selectedAttempt;if(!a){APP.tutorTab='tests';return sTutorDash();}
+  const pct=Math.round(a.score/a.total*100);
+  const obj=TESTS.find(t=>t.id===a.testId);
+  const col=pct>=80?'var(--mint)':pct>=50?'var(--sun)':'var(--coral)';
+  return `
+<div class="screen">
+  <div class="nav">
+    <button class="nav-back" data-a="back-to-tests">← Test Results</button>
+    <div class="nav-title">${obj?.emoji||'📝'} ${a.testName}</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="results-card" style="margin-bottom:14px">
+    <div class="score-big" style="color:${col}">${a.score}/${a.total}</div>
+    <div class="score-sub">${pct}%</div>
+    <div class="score-sub" style="margin-top:4px;font-size:13px">${fmtDate(a.date)} · ⏱ ${fmtDur(a.duration)}</div>
+    <div class="breakdown" style="margin-top:10px">
+      <div class="chip ok">✅ ${a.score} correct</div>
+      <div class="chip no">❌ ${a.total-a.score} wrong</div>
+    </div>
+  </div>
+  ${a.answers.map((ans,i)=>`
+    <div class="rev-item ${ans.correct?'ok':'no'}">
+      <div class="rev-icon">${ans.correct?'✅':'❌'}</div>
+      <div class="rev-qnum">Q${i+1}</div>
+      <div class="rev-q">${ans.qText}</div>
+      <div class="rev-answers">
+        <div class="rev-chip rev-user ${ans.correct?'ok':'no'}">Student answered: ${ans.userAnswer}</div>
+        ${!ans.correct?`<div class="rev-chip rev-correct">Correct: ${ans.correctAnswer}</div>`:''}
+      </div>
+      ${ans.hint?`<div class="rev-hint">💡 ${ans.hint}</div>`:''}
+    </div>`).join('')}
+</div>`;
+}
+
+// ================================================================
+// SHARED: QUESTION BODY RENDERER
+// ================================================================
+function qBody(q){
+  if(q.type==='number')return `
+    ${q.scaleWeightG!=null?`<div class="scale-wrap">${buildScale(q.scaleWeightG)}</div>`:''}
+    ${q.item?`<div class="item-display"><span class="item-emoji">${q.item.emoji}</span><div class="item-name">${q.item.name}</div></div>`:''}
+    <div class="q-text">${q.text}</div>
+    <div class="answer-area">
+      <input type="number" step="any" class="answer-input" id="qInput" placeholder="?"/>
+      <span class="unit-label">${q.unit}</span>
+    </div>
+    <button class="submit-btn" data-a="submit-ans">Check ✨</button>`;
+  if(q.type==='compare')return `
+    <div class="q-text">${q.text}</div>
+    <div class="compare-row">
+      <div class="cmp-item" data-a="pick-cmp" data-val="A">
+        <span class="cmp-emoji">${q.optA.emoji}</span>
+        <div class="cmp-weight">${q.optA.label}</div>
+      </div>
+      <div class="vs">VS</div>
+      <div class="cmp-item" data-a="pick-cmp" data-val="B">
+        <span class="cmp-emoji">${q.optB.emoji}</span>
+        <div class="cmp-weight">${q.optB.label}</div>
+      </div>
+    </div>
+    <div style="text-align:center;font-size:12px;opacity:.55;margin-top:6px">💡 Convert to the same unit first!</div>`;
+  return '';
+}
+
+// ================================================================
+// PRACTICE ▸ QUESTION GENERATORS
+// — Add new functions here and register them in renderPracticeQ()
+// ================================================================
+function genConvert(){
+  const p=APP.practice,dir=Math.random()>.5?'k':'g';let from,fu,tu,ans;
+  if(p.level===1){
+    from=ri(1,10);
+    if(dir==='k'){fu='kg';tu='g';ans=from*1000;}
+    else{from*=1000;fu='g';tu='kg';ans=from/1000;}
+  }else if(p.level===2){
+    if(dir==='k'){from=pick([0.5,1.5,2.5,3.5,4.5,1.25,2.25,3.75]);fu='kg';tu='g';ans=from*1000;}
+    else{from=pick([500,1500,2500,3500,4500,1250,2250,3750]);fu='g';tu='kg';ans=from/1000;}
+  }else{
+    if(dir==='k'){from=Math.round(ri(105,895))/100;fu='kg';tu='g';ans=Math.round(from*1000);}
+    else{from=ri(1100,8950);fu='g';tu='kg';ans=from/1000;}
+  }
+  const wG=fu==='kg'?from*1000:from;
+  return{type:'number',
+    text:`How many <span class="highlight">${tu}</span> is <span class="highlight">${from} ${fu}</span>?`,
+    answer:ans,unit:tu,tolerance:.01,scaleWeightG:wG,
+    hint:fu==='kg'?`${from} × 1000 = ${ans} g`:`${from} ÷ 1000 = ${ans} kg`};
+}
+function genCompare(){
+  const p=APP.practice;let aW,bW,aU,bU;
+  if(p.level===1){aW=ri(1,9)*1000;aU='g';bW=ri(1,9);bU='kg';}
+  else if(p.level===2){aW=pick([500,1500,2000,2500,3000,3500,4000]);aU='g';bW=ri(10,40)/10;bU='kg';}
+  else{aW=ri(500,5500);aU='g';bW=ri(10,55)/10;bU='kg';}
+  const aG=aU==='kg'?aW*1000:aW,bG=bU==='kg'?bW*1000:bW;
+  return{type:'compare',
+    text:'Which is <span class="highlight">heavier</span>? Tap to choose!',
+    optA:{label:`${aW} ${aU}`,emoji:'📦',weightG:aG},
+    optB:{label:`${bW} ${bU}`,emoji:'📦',weightG:bG},
+    answer:aG>=bG?'A':'B',
+    hint:`${aW} ${aU} = ${aG}g  vs  ${bW} ${bU} = ${bG}g`};
+}
+function genRealLife(){
+  const p=APP.practice,item=pick(ITEMS);
+  const g=item.unit==='kg'?item.weight*1000:item.weight;
+  const v=ri(1,3);let text,ans,unit;
+  if(v===1){
+    if(item.unit==='g'){ans=g/1000;unit='kg';
+      text=`${cap(item.name)} ≈ <span class="highlight">${item.weight} ${item.unit}</span>. How many <span class="highlight">kg</span>?`;}
+    else{ans=g;unit='g';
+      text=`${cap(item.name)} ≈ <span class="highlight">${item.weight} ${item.unit}</span>. How many <span class="highlight">g</span>?`;}
+  }else if(v===2){
+    const n=ri(2,5),tot=g*n;
+    if(p.level>=2&&tot>=1000){ans=tot/1000;unit='kg';
+      text=`${cap(item.name)} = <span class="highlight">${item.weight} ${item.unit}</span>. Weight of <span class="highlight">${n}</span> in <span class="highlight">kg</span>?`;}
+    else{ans=tot;unit='g';
+      text=`${cap(item.name)} = <span class="highlight">${item.weight} ${item.unit}</span>. Weight of <span class="highlight">${n}</span> in <span class="highlight">g</span>?`;}
+  }else{
+    const ex=ri(1,5);ans=(g+ex*1000)/1000;unit='kg';
+    text=`${cap(item.name)} = <span class="highlight">${item.weight} ${item.unit}</span> + <span class="highlight">${ex} kg</span> bag. Total in <span class="highlight">kg</span>?`;
+  }
+  return{type:'number',text,answer:ans,unit,tolerance:.01,item,hint:`Answer: ${ans} ${unit}`};
+}
+
+// ================================================================
+// ANSWER CHECKING
+// ================================================================
+function checkAns(q,raw){
+  if(q.type==='number'){const v=parseFloat(raw);return isNaN(v)?null:Math.abs(v-q.answer)<=(q.tolerance||.01);}
+  if(q.type==='compare')return raw===q.answer;
+  return false;
+}
+function fmtAns(q){
+  if(q.type==='number')return `${q.answer} ${q.unit}`;
+  return q.answer==='A'?q.optA.label:q.optB.label;
+}
+function fmtUserAns(q,raw){
+  if(q.type==='number')return `${raw} ${q.unit}`;
+  return raw==='A'?q.optA.label:q.optB.label;
+}
+
+// ================================================================
+// SUBMIT HANDLERS
+// ================================================================
+function submitPractice(raw){
+  const p=APP.practice;if(p.answered)return;
+  const ok=checkAns(p.currentQ,raw);
+  if(ok===null){toast('Enter a number first!');return;}
+  p.answered=true;
+  p.history.push({q:p.currentQ,userAnswer:String(raw),correct:ok});
+  if(ok)p.qNum++;
+  const cor=p.history.filter(x=>x.correct).length;
+  const bar=document.getElementById('revBar'),info=document.getElementById('revInfo');
+  if(bar){bar.style.display='flex';if(info)info.textContent=`✅ ${cor}/${p.history.length} correct`;}
+  const fb=document.getElementById('pFeed');if(!fb)return;
+  const cheers=['Amazing! ⭐','Excellent! 🌟','You got it! 🎉','Brilliant! ✨','Perfect! 👏'];
+  fb.innerHTML=ok
+    ?`<div class="feedback ok">${pick(cheers)}</div>
+      <button class="submit-btn" style="background:var(--mint);margin-top:10px" data-a="next-q">Next Question →</button>`
+    :`<div class="feedback no">Not quite!</div>
+      <div class="hint">💡 ${p.currentQ.hint||'Correct: '+fmtAns(p.currentQ)}</div>
+      <button class="submit-btn" style="background:var(--sky);margin-top:10px" data-a="next-q">Try Another →</button>`;
+  if(ok){const c=document.createElement('div');c.className='celebrate';
+    c.textContent=pick(['🎉','⭐','🌟','🏆','✨']);document.body.appendChild(c);setTimeout(()=>c.remove(),1200);}
+}
+
+async function submitTest(raw){
+  const t=APP.test,q=t.questions[t.current];
+  const ok=checkAns(q,raw);
+  if(ok===null){toast('Enter a number first!');return;}
+  t.answers.push({idx:t.current,q,userAnswer:String(raw),correct:ok});
+  if(t.current+1>=t.questions.length){
+    // Build & persist detailed attempt record for tutor
+    const obj=TESTS.find(x=>x.id===t.id);
+    const score=t.answers.filter(a=>a.correct).length;
+    const attempt={
+      id:'a'+Date.now(),
+      testId:t.id,
+      testName:obj.name,
+      date:new Date().toISOString(),
+      duration:APP.sessionStart?Math.floor((Date.now()-APP.sessionStart)/1000):0,
+      score,total:t.questions.length,
+      answers:t.answers.map(a=>({
+        qId:a.q.id,
+        qText:a.q.text.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(),
+        qType:a.q.type,
+        userAnswer:fmtUserAns(a.q,a.userAnswer),
+        correct:a.correct,
+        correctAnswer:fmtAns(a.q),
+        hint:a.q.hint||''
+      }))
+    };
+    await appendAttempt(attempt);
+    await endSession({testName:obj.name,score:`${score}/${t.questions.length}`,testId:t.id});
+    go('test_results');
+  }else{
+    t.current++;go('test_active');
+  }
+}
+
+// ================================================================
+// SCALE SVG
+// ================================================================
+function buildScale(wG){
+  let maxG,ticks;
+  if(wG<=500){maxG=500;ticks=[0,100,200,300,400,500];}
+  else if(wG<=1000){maxG=1000;ticks=[0,250,500,750,1000];}
+  else if(wG<=2000){maxG=2000;ticks=[0,0.5,1,1.5,2];}
+  else if(wG<=5000){maxG=5000;ticks=[0,1,2,3,4,5];}
+  else if(wG<=10000){maxG=10000;ticks=[0,2,4,6,8,10];}
+  else{maxG=20000;ticks=[0,5,10,15,20];}
+  const ul=maxG>1000?'kg':'g',ratio=Math.min(wG/maxG,1),deg=-90+ratio*180;
+  const reading=ul==='g'?wG+'g':(wG/1000)+'kg';
+  const marks=ticks.map((t,i)=>{
+    const a=-Math.PI+(i/(ticks.length-1))*Math.PI,cx=100,cy=88;
+    const [x1,y1]=[cx+Math.cos(a)*66,cy+Math.sin(a)*66];
+    const [x2,y2]=[cx+Math.cos(a)*57,cy+Math.sin(a)*57];
+    const [xt,yt]=[cx+Math.cos(a)*47,cy+Math.sin(a)*47];
+    return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#2D2D2D" stroke-width="1.5"/>
+            <text x="${xt.toFixed(1)}" y="${(yt+3).toFixed(1)}" text-anchor="middle" font-size="8" font-family="Fredoka" fill="#6A4C93" font-weight="600">${t}</text>`;
+  }).join('');
+  return `<svg viewBox="0 0 200 115" style="width:190px;height:115px">
+    <path d="M18 88 A82 82 0 0 1 182 88 Z" fill="#FFF8E7" stroke="#2D2D2D" stroke-width="2.5"/>
+    ${marks}
+    <text x="100" y="74" text-anchor="middle" font-size="9" font-family="Fredoka" fill="#6A4C93" font-weight="700">${ul}</text>
+    <g style="transform:rotate(${deg}deg);transform-origin:100px 88px">
+      <line x1="100" y1="88" x2="100" y2="26" stroke="#FF6B6B" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="100" cy="88" r="7" fill="#2D2D2D"/>
+      <circle cx="100" cy="88" r="3" fill="#FFD93D"/>
+    </g>
+    <rect x="38" y="88" width="124" height="19" fill="#6A4C93" stroke="#2D2D2D" stroke-width="2.5" rx="4"/>
+    <rect x="56" y="107" width="88" height="6" fill="#4D2C5E" stroke="#2D2D2D" stroke-width="2" rx="2"/>
+    <rect x="64" y="92" width="72" height="12" fill="#2D2D2D" rx="2"/>
+    <text x="100" y="102" text-anchor="middle" font-size="10" font-family="Fredoka" fill="#FFD93D" font-weight="700">${reading}</text>
+  </svg>`;
+}
+
+// ================================================================
+// DELEGATED EVENT HANDLER  (single listener, all screens)
+// ================================================================
+document.addEventListener('DOMContentLoaded',()=>{
+  const app=document.getElementById('app');
+  app.addEventListener('click',e=>{
+    const el=e.target.closest('[data-a]');if(!el)return;
+    handle(el.dataset.a,el.dataset.val??null);
+  });
+  app.addEventListener('keypress',e=>{
+    if(e.key!=='Enter'||e.target.id!=='qInput')return;
+    if(APP.screen==='practice')submitPractice(e.target.value);
+    else if(APP.screen==='test_active')submitTest(e.target.value);
+  });
+  loadAll().then(render);
+});
+
+function handle(a,v){
+  switch(a){
+    // ── Student navigation ──────────────────────────────────────
+    case 'go-practice':
+      APP.practice={mode:'convert',level:1,qNum:1,currentQ:null,answered:false,history:[]};
+      startSession('practice');go('practice');break;
+    case 'go-test-menu':go('test_menu');break;
+    case 'set-level':APP.practice.level=parseInt(v);APP.practice.qNum=1;go('practice');break;
+    case 'set-mode':APP.practice.mode=v;APP.practice.qNum=1;go('practice');break;
+    case 'submit-ans':{
+      const inp=document.getElementById('qInput');
+      if(APP.screen==='practice')submitPractice(inp?.value);
+      else if(APP.screen==='test_active')submitTest(inp?.value);break;
+    }
+    case 'pick-cmp':
+      document.querySelectorAll('.cmp-item').forEach(x=>x.classList.remove('picked'));
+      document.querySelector(`[data-a="pick-cmp"][data-val="${v}"]`)?.classList.add('picked');
+      if(APP.screen==='practice')submitPractice(v);
+      else if(APP.screen==='test_active')submitTest(v);break;
+    case 'next-q':renderPracticeQ();break;
+    case 'go-review-practice':
+      APP.review={source:'practice',items:APP.practice.history,backTo:'practice'};go('review');break;
+    case 'start-test':{
+      const t=TESTS.find(x=>x.id===v);
+      APP.test={id:v,questions:t.questions,current:0,answers:[]};
+      startSession('test');go('test_active');break;
+    }
+    case 'abandon-test':
+      endSession({testId:APP.test.id,abandoned:true}).then(()=>go('test_menu'));break;
+    case 'retry-test':{
+      const t=TESTS.find(x=>x.id===APP.test.id);
+      APP.test={id:APP.test.id,questions:t.questions,current:0,answers:[]};
+      startSession('test');go('test_active');break;
+    }
+    case 'go-review-test':
+      APP.review={source:'test',items:APP.test.answers,backTo:'test_results'};go('review');break;
+    case 'back-test-menu':go('test_menu');break;
+    case 'back-from-review':go(APP.review.backTo||'home');break;
+    case 'back-home':{
+      if(APP.sessionStart){
+        const h=APP.practice.history||[];
+        endSession({questionsAttempted:h.length,correctAnswers:h.filter(x=>x.correct).length})
+          .then(()=>go('home'));
+      }else go('home');break;
+    }
+
+    // ── Tutor: login ─────────────────────────────────────────────
+    case 'go-tutor':APP.pinBuffer='';go('tutor_login');break;
+    case 'pin-key':
+      if(APP.pinBuffer.length>=4)break;
+      APP.pinBuffer+=v;
+      document.querySelectorAll('.pin-dot').forEach((d,i)=>{
+        d.classList.toggle('filled',i<APP.pinBuffer.length);
+        d.classList.remove('error');
+      });
+      if(APP.pinBuffer.length===4)setTimeout(()=>{
+        if(APP.pinBuffer===APP.tutorPin){
+          APP.tutorAuth=true;APP.pinBuffer='';APP.tutorTab='sessions';go('tutor_dash');
+        }else{
+          const dots=document.getElementById('pinDots');
+          if(dots){
+            dots.querySelectorAll('.pin-dot').forEach(d=>{d.classList.add('error');d.classList.remove('filled');});
+            dots.classList.add('shake');
+            setTimeout(()=>{dots.classList.remove('shake');
+              dots.querySelectorAll('.pin-dot').forEach(d=>d.classList.remove('error'));},600);
+          }
+          APP.pinBuffer='';
+        }
+      },140);break;
+    case 'pin-del':
+      APP.pinBuffer=APP.pinBuffer.slice(0,-1);
+      document.querySelectorAll('.pin-dot').forEach((d,i)=>
+        d.classList.toggle('filled',i<APP.pinBuffer.length));break;
+
+    // ── Tutor: dashboard ─────────────────────────────────────────
+    case 'tutor-logout':APP.tutorAuth=false;go('home');break;
+    case 't-tab':APP.tutorTab=v;go('tutor_dash');break;
+    case 'view-attempt':
+      APP.selectedAttempt=APP.testAttempts.find(x=>x.id===v);
+      go('tutor_test_detail');break;
+    case 'back-to-tests':APP.tutorTab='tests';go('tutor_dash');break;
+
+    // ── Tutor: settings ──────────────────────────────────────────
+    case 'save-pin':{
+      const inp=document.getElementById('newPin');
+      const p=(inp?.value||'').trim();
+      if(!/^\d{4}$/.test(p)){toast('PIN must be exactly 4 digits');return;}
+      saveTutorPin(p).then(()=>{toast('✅ PIN updated!');if(inp)inp.value='';});break;
+    }
+    case 'clear-data':
+      if(confirm('Delete ALL student sessions and test results permanently?')){
+        APP.sessions=[];APP.testAttempts=[];
+        Promise.all([
+          window.storage.set(KEY_SESSIONS,'[]'),
+          window.storage.set(KEY_ATTEMPTS,'[]'),
+        ]).then(()=>go('tutor_dash'));
+      }break;
+  }
+}
+
+// ================================================================
+// TOAST
+// ================================================================
+function toast(msg){
+  const t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#2D2D2D;color:white;padding:10px 20px;border-radius:20px;font-family:Fredoka,sans-serif;font-size:14px;font-weight:600;z-index:200;animation:pop .3s ease-out;white-space:nowrap;pointer-events:none';
+  t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);
+}
+</script>
+</body>
+</html>
