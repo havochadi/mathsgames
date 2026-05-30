@@ -383,22 +383,56 @@ const APP={
 const KEY_SESSIONS ='alya_sessions_v3';
 const KEY_ATTEMPTS ='alya_attempts_v3';
 const KEY_PIN      ='alya_tutor_pin_v1';
+const storage=makeStorageAdapter();
+
+function makeStorageAdapter(){
+  const ext=window.storage;
+  if(ext&&typeof ext.get==='function'&&typeof ext.set==='function'){
+    return {
+      async get(key){return ext.get(key);},
+      async set(key,value){return ext.set(key,value);}
+    };
+  }
+  let localOK=false;
+  try{
+    const probe='__alya_probe__';
+    window.localStorage.setItem(probe,'1');
+    window.localStorage.removeItem(probe);
+    localOK=true;
+  }catch{}
+  if(localOK){
+    return {
+      async get(key){
+        const value=window.localStorage.getItem(key);
+        return value===null?null:{value};
+      },
+      async set(key,value){
+        window.localStorage.setItem(key,value);
+      }
+    };
+  }
+  const mem=new Map();
+  return {
+    async get(key){return mem.has(key)?{value:mem.get(key)}:null;},
+    async set(key,value){mem.set(key,value);}
+  };
+}
 
 async function loadAll(){
-  try{const r=await window.storage.get(KEY_SESSIONS);if(r?.value)APP.sessions=JSON.parse(r.value);}catch{}
-  try{const r=await window.storage.get(KEY_ATTEMPTS);if(r?.value)APP.testAttempts=JSON.parse(r.value);}catch{}
-  try{const r=await window.storage.get(KEY_PIN);if(r?.value)APP.tutorPin=r.value;}catch{}
+  try{const r=await storage.get(KEY_SESSIONS);if(r?.value)APP.sessions=JSON.parse(r.value);}catch{}
+  try{const r=await storage.get(KEY_ATTEMPTS);if(r?.value)APP.testAttempts=JSON.parse(r.value);}catch{}
+  try{const r=await storage.get(KEY_PIN);if(r?.value)APP.tutorPin=r.value;}catch{}
 }
 async function saveSessions(){
-  try{await window.storage.set(KEY_SESSIONS,JSON.stringify(APP.sessions.slice(-100)));}catch{}
+  try{await storage.set(KEY_SESSIONS,JSON.stringify(APP.sessions.slice(-100)));}catch{}
 }
 async function appendAttempt(a){
   APP.testAttempts.push(a);
-  try{await window.storage.set(KEY_ATTEMPTS,JSON.stringify(APP.testAttempts.slice(-200)));}catch{}
+  try{await storage.set(KEY_ATTEMPTS,JSON.stringify(APP.testAttempts.slice(-200)));}catch{}
 }
 async function saveTutorPin(pin){
   APP.tutorPin=pin;
-  try{await window.storage.set(KEY_PIN,pin);}catch{}
+  try{await storage.set(KEY_PIN,pin);}catch{}
 }
 
 // ================================================================
@@ -1118,8 +1152,8 @@ function handle(a,v){
       if(confirm('Delete ALL student sessions and test results permanently?')){
         APP.sessions=[];APP.testAttempts=[];
         Promise.all([
-          window.storage.set(KEY_SESSIONS,'[]'),
-          window.storage.set(KEY_ATTEMPTS,'[]'),
+          storage.set(KEY_SESSIONS,'[]'),
+          storage.set(KEY_ATTEMPTS,'[]'),
         ]).then(()=>go('tutor_dash'));
       }break;
   }
