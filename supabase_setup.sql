@@ -83,5 +83,12 @@ to anon
 using (true)
 with check (true);
 
+drop policy if exists "alya_progress_delete_anon" on public.alya_progress;
+create policy "alya_progress_delete_anon"
+on public.alya_progress
+for delete
+to anon
+using (true);
+
 grant usage on schema public to anon;
-grant select, insert, update on table public.alya_progress to anon;
+grant select, insert, update, delete on table public.alya_progress to anon;

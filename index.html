@@ -184,6 +184,12 @@ body{font-family:'Fredoka',sans-serif;background:var(--cream);
   border-radius:0 0 28px 28px;border-bottom:4px solid #4D2C5E}
 .t-hdr-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 .t-hdr-title{font-family:'Caveat',cursive;font-size:30px;font-weight:700}
+.t-hdr-left{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
+.t-student-label{font-size:11px;opacity:.85;font-weight:600}
+.t-student-select{min-width:140px;max-width:220px;border:2px solid rgba(255,255,255,.45);
+  border-radius:10px;background:rgba(255,255,255,.2);color:white;padding:6px 10px;
+  font-family:'Fredoka',sans-serif;font-size:13px;font-weight:600}
+.t-student-select option{color:var(--ink)}
 .t-logout{background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.4);
   color:white;border-radius:12px;padding:6px 14px;
   font-family:'Fredoka',sans-serif;font-size:13px;cursor:pointer}
@@ -462,6 +468,15 @@ function sanitizeStudentId(raw){
 function normalizeStudentName(raw){
   return String(raw||'').replace(/\s+/g,' ').trim().slice(0,40);
 }
+function possessiveLabel(name){
+  const clean=String(name||'').trim();
+  if(!clean)return "Alya's";
+  return /s$/i.test(clean)?`${clean}'`:`${clean}'s`;
+}
+function appBrandTitle(){
+  const student=normalizeStudentName(APP.studentName);
+  return `${possessiveLabel(student||'Alya')} Weight Adventure`;
+}
 function escapeHtml(v){
   return String(v??'')
     .replace(/&/g,'&amp;')
@@ -595,6 +610,33 @@ function shortCloudError(err){
   if(!msg)return'error';
   return msg.length>80?msg.slice(0,77)+'...':msg;
 }
+function sortedUniqueStudentNames(){
+  const seen=new Set();
+  const names=[];
+  const add=raw=>{
+    const name=normalizeStudentName(raw);
+    if(!name)return;
+    const key=name.toLowerCase();
+    if(seen.has(key))return;
+    seen.add(key);
+    names.push(name);
+  };
+  add(APP.studentName);
+  (APP.leaderboard||[]).forEach(row=>add(row?.studentName));
+  return names.sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
+}
+function clearLocalSnapshotsForAllStudents(){
+  try{
+    if(!window.localStorage)return;
+    const prefixes=[`${KEY_SESSIONS}__`,`${KEY_ATTEMPTS}__`,`${KEY_UPDATED_AT}__`];
+    const keysToRemove=[];
+    for(let i=0;i<window.localStorage.length;i++){
+      const key=window.localStorage.key(i)||'';
+      if(prefixes.some(prefix=>key.startsWith(prefix)))keysToRemove.push(key);
+    }
+    keysToRemove.forEach(k=>window.localStorage.removeItem(k));
+  }catch{}
+}
 
 async function cloudPull(){
   if(!ensureStudentContext())return{ok:false,error:'no-student'};
@@ -678,6 +720,28 @@ async function cloudPush(){
     return{ok:false,error:err?.name==='AbortError'?'timeout':(err?.message||'network error')};
   }
 }
+async function cloudDeleteAllStudents(){
+  if(!cloudConfigured())return{ok:false,error:'disabled'};
+  const filters=['student_id=not.is.null','student_id=neq.__never__'];
+  try{
+    let lastError='delete failed';
+    for(const filter of filters){
+      const url=`${cloudBaseUrl()}/${CLOUD_SYNC.table}?${filter}`;
+      const res=await fetchWithTimeout(url,{
+        method:'DELETE',
+        headers:cloudHeaders({'Prefer':'return=minimal'})
+      });
+      if(!res.ok){
+        lastError=await parseCloudHttpError(res);
+        continue;
+      }
+      return{ok:true};
+    }
+    return{ok:false,error:lastError};
+  }catch(err){
+    return{ok:false,error:err?.name==='AbortError'?'timeout':(err?.message||'network error')};
+  }
+}
 async function syncCloudOnLoad(){
   if(!ensureStudentContext())return;
   if(!cloudConfigured()){
@@ -706,7 +770,7 @@ async function syncCloudOnLoad(){
     APP.sessions=pulled.row.sessions;
     APP.testAttempts=pulled.row.attempts;
     APP.tutorPin=pulled.row.tutorPin;
-    APP.cloudLastSync=remoteTs;
+    APP.cloudLastSync=remoteTs||Date.now();
     await persistLocalSnapshot();
     await setLocalUpdated(remoteTs||Date.now());
     APP.cloudStatus='Cloud synced';
@@ -728,7 +792,7 @@ async function syncCloudNow(){
     APP.sessions=pulled.row.sessions;
     APP.testAttempts=pulled.row.attempts;
     APP.tutorPin=pulled.row.tutorPin;
-    APP.cloudLastSync=pulled.row.updatedAt||APP.cloudLastSync;
+    APP.cloudLastSync=pulled.row.updatedAt||Date.now();
   }
   await persistLocalSnapshot();
   const pushed=await cloudPush();
@@ -893,6 +957,7 @@ function fmtDate(iso){
 // ================================================================
 function go(screen){APP.screen=screen;render();}
 function render(){
+  document.title=appBrandTitle();
   const map={
     student_login:sStudentLogin,
     home:sHome,practice:sPractice,
@@ -916,7 +981,7 @@ function sStudentLogin(){
   return `
 <div class="screen">
   <div class="home-header" style="padding-top:50px">
-    <div class="home-title">Alya's Weight Adventure</div>
+    <div class="home-title">${escapeHtml(appBrandTitle())}</div>
     <div class="home-sub">${lastHint}</div>
   </div>
   <div class="set-card" style="margin-top:20px">
@@ -938,7 +1003,7 @@ function sHome(){
   return `
 <div class="screen">
   <div class="home-header">
-    <div class="home-title">Alya's Weight Adventure</div>
+    <div class="home-title">${escapeHtml(appBrandTitle())}</div>
     <div class="home-sub">${escapeHtml(APP.studentName||'Student')} · ⭐ ${totalStars} stars</div>
   </div>
   <div class="cheat-bar"><strong>Remember!</strong> 1 kg = 1000 g</div>
@@ -1194,6 +1259,17 @@ function sTutorDash(){
   const atts=[...APP.testAttempts].reverse();
   const totalTime=APP.sessions.reduce((s,x)=>s+(x.duration||0),0);
   const totalStars=APP.testAttempts.reduce((sum,a)=>sum+(Number.isFinite(a.stars)?a.stars:calcAttemptStars(a)),0);
+  const studentNames=sortedUniqueStudentNames();
+  const selectedStudent=normalizeStudentName(APP.studentName);
+  const studentDropdown=studentNames.length===0
+    ?`<select class="t-student-select" id="tutorStudentSelect" data-a="tutor-pick-student" disabled>
+        <option value="">No students yet</option>
+      </select>`
+    :`<select class="t-student-select" id="tutorStudentSelect" data-a="tutor-pick-student">
+        ${studentNames.map(name=>
+          `<option value="${escapeHtml(name)}"${name===selectedStudent?' selected':''}>${escapeHtml(name)}</option>`
+        ).join('')}
+      </select>`;
 
   // ── Tab content ──
   let content='';
@@ -1273,9 +1349,9 @@ function sTutorDash(){
         <button class="act-btn secondary" style="width:100%;margin-top:10px" data-a="go-leaderboard">🏅 Open Leaderboard</button>
       </div>
       <div class="set-card">
-        <div class="set-label">🗑️ Clear All Student Data</div>
-        <div class="set-sub">Permanently removes all sessions and test records.</div>
-        <button class="danger-btn" data-a="clear-data">Clear All Data</button>
+        <div class="set-label">🗑️ Clear All Students</div>
+        <div class="set-sub">Permanently removes all student records from cloud and this device cache.</div>
+        <button class="danger-btn" data-a="clear-data">Clear All Students</button>
       </div>`;
   }
 
@@ -1283,7 +1359,11 @@ function sTutorDash(){
 <div class="screen">
   <div class="t-header">
     <div class="t-hdr-row">
-      <div class="t-hdr-title">👩‍🏫 ${escapeHtml(APP.studentName||'Tutor Dashboard')}</div>
+      <div class="t-hdr-left">
+        <div class="t-hdr-title">👩‍🏫 Tutor View</div>
+        <span class="t-student-label">Student</span>
+        ${studentDropdown}
+      </div>
       <button class="t-logout" data-a="tutor-logout">Log out</button>
     </div>
     <div class="t-stats">
@@ -1557,7 +1637,13 @@ document.addEventListener('DOMContentLoaded',()=>{
   const app=document.getElementById('app');
   app.addEventListener('click',e=>{
     const el=e.target.closest('[data-a]');if(!el)return;
+    if(el.tagName==='SELECT')return;
     handle(el.dataset.a,el.dataset.val??null);
+  });
+  app.addEventListener('change',e=>{
+    const el=e.target.closest('[data-a]');if(!el)return;
+    const value=('value' in el&&typeof el.value==='string')?el.value:(el.dataset.val??null);
+    handle(el.dataset.a,value);
   });
   app.addEventListener('keypress',e=>{
     if(e.key!=='Enter')return;
@@ -1620,6 +1706,17 @@ function handle(a,v){
         APP.tutorTab='sessions';
         go('tutor_dash');
         toast(`Loaded ${name}`);
+      });
+      break;
+    }
+    case 'tutor-pick-student':{
+      const name=normalizeStudentName(v||'');
+      if(name.length<2||name===APP.studentName)break;
+      const nextTab=APP.tutorTab==='tests'?'tests':'sessions';
+      loadStudentByName(name).then(ok=>{
+        if(!ok){toast('Could not load that student now');go('tutor_dash');return;}
+        APP.tutorTab=nextTab;
+        go('tutor_dash');
       });
       break;
     }
@@ -1741,17 +1838,42 @@ function handle(a,v){
         toast(ok?'✅ Cloud sync complete':'Cloud sync failed (local data kept)');
       });break;
     case 'clear-data':
-      if(!APP.studentName){toast('Load a student first');break;}
-      if(confirm('Delete ALL student sessions and test results permanently?')){
-        APP.sessions=[];APP.testAttempts=[];
-        persistLocalSnapshot()
-          .then(()=>setLocalUpdated(Date.now()))
-          .then(()=>cloudPush())
-          .then(r=>{
-            if(cloudConfigured()&&!r.ok)toast('Cleared locally; cloud sync failed');
+      {
+        const hasCloud=cloudConfigured();
+        if(!confirm('Delete ALL students from cloud and this device cache? This cannot be undone.'))break;
+        APP.cloudStatus=hasCloud?'Cloud clearing all students...':'Local only (cloud not configured)';
+        go('tutor_dash');
+        const clearLocally=async()=>{
+          clearLocalSnapshotsForAllStudents();
+          APP.sessions=[];
+          APP.testAttempts=[];
+          APP.leaderboard=[];
+          APP.selectedAttempt=null;
+          APP.studentName='';
+          APP.cloudStudentId='';
+          await persistLocalSnapshot();
+          try{await storage.set(KEY_LAST_STUDENT,'');}catch{}
+          await setLocalUpdated(Date.now());
+          APP.cloudLastSync=hasCloud?Date.now():0;
+          APP.cloudStatus=hasCloud?'Cloud synced':'Local data cleared';
+          go('tutor_dash');
+          toast(hasCloud?'✅ All students cleared':'Local student data cleared');
+        };
+        if(!hasCloud){
+          clearLocally().catch(()=>toast('Could not clear local student data'));
+          break;
+        }
+        cloudDeleteAllStudents().then(result=>{
+          if(!result.ok){
+            APP.cloudStatus=`Cloud error: ${shortCloudError(result.error)} (clear failed)`;
             go('tutor_dash');
-          });
-      }break;
+            toast('Cloud clear failed');
+            return;
+          }
+          clearLocally().catch(()=>toast('Could not finish local cleanup'));
+        });
+        break;
+      }
   }
 }
 
