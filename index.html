@@ -230,6 +230,9 @@ body{font-family:'Fredoka',sans-serif;background:var(--cream);
 .set-input{width:100%;padding:10px;border:2px solid var(--ink);border-radius:12px;
   font-family:'Fredoka',sans-serif;font-size:20px;text-align:center;letter-spacing:8px;background:var(--cream)}
 .set-input:focus{outline:none;background:white;box-shadow:0 0 0 3px var(--sun)}
+.set-input.compact{font-size:15px;letter-spacing:0;text-align:left}
+.sync-status{font-size:12px;opacity:.75;margin:8px 0 0}
+.sync-status.ok{color:var(--mint)}.sync-status.warn{color:var(--coral)}
 .danger-btn{background:#FFE0E0;border:3px solid var(--coral);color:var(--coral);
   border-radius:14px;padding:12px;width:100%;font-family:'Fredoka',sans-serif;
   font-weight:600;font-size:15px;cursor:pointer;box-shadow:0 4px 0 #cc4444}
@@ -375,6 +378,9 @@ const APP={
   tutorPin:'1234',
   pinBuffer:'',
   selectedAttempt:null,
+  cloudStudentId:'',
+  cloudStatus:'Local only',
+  cloudLastSync:0,
 };
 
 // ================================================================
@@ -383,7 +389,26 @@ const APP={
 const KEY_SESSIONS ='alya_sessions_v3';
 const KEY_ATTEMPTS ='alya_attempts_v3';
 const KEY_PIN      ='alya_tutor_pin_v1';
+const KEY_CLOUD_STUDENT='alya_cloud_student_v1';
+const KEY_UPDATED_AT   ='alya_updated_at_v1';
+
+// ================================================================
+// CLOUD SYNC CONFIG (Supabase REST)
+// 1) Replace baseUrl and apiKey with your Supabase project values
+// 2) Create table/policies using supabase_setup.sql
+// ================================================================
+const CLOUD_SYNC={
+  baseUrl:'https://YOUR_PROJECT_REF.supabase.co',
+  apiKey:'YOUR_SUPABASE_ANON_OR_PUBLISHABLE_KEY',
+  table:'alya_progress',
+  defaultStudentId:'alya-student-1',
+  timeoutMs:8000,
+};
+
 const storage=makeStorageAdapter();
+let LOCAL_UPDATED_AT=0;
+
+APP.cloudStudentId=CLOUD_SYNC.defaultStudentId;
 
 function makeStorageAdapter(){
   const ext=window.storage;
@@ -418,21 +443,222 @@ function makeStorageAdapter(){
   };
 }
 
+function safeJsonParseArray(raw){
+  try{
+    const data=JSON.parse(raw||'[]');
+    return Array.isArray(data)?data:[];
+  }catch{return [];}
+}
+function sanitizeStudentId(raw){
+  const cleaned=String(raw||'')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9_-]/g,'-')
+    .replace(/-+/g,'-')
+    .slice(0,40);
+  return cleaned||CLOUD_SYNC.defaultStudentId;
+}
+function escapeHtml(v){
+  return String(v??'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+function cloudConfigured(){
+  const u=(CLOUD_SYNC.baseUrl||'').trim();
+  const k=(CLOUD_SYNC.apiKey||'').trim();
+  return u.startsWith('https://')
+    &&k.length>0
+    &&!u.includes('YOUR_PROJECT_REF')
+    &&!k.includes('YOUR_SUPABASE_');
+}
+function cloudBaseUrl(){
+  return (CLOUD_SYNC.baseUrl||'').replace(/\/+$/,'')+'/rest/v1';
+}
+function cloudHeaders(extra={}){
+  const k=(CLOUD_SYNC.apiKey||'').trim();
+  const h={apikey:k,...extra};
+  // Legacy JWT anon keys expect Authorization as bearer.
+  if(k.startsWith('eyJ'))h.Authorization='Bearer '+k;
+  return h;
+}
+async function fetchWithTimeout(url,opt={},timeoutMs=CLOUD_SYNC.timeoutMs){
+  const ctl=new AbortController();
+  const t=setTimeout(()=>ctl.abort(),timeoutMs);
+  try{
+    return await fetch(url,{...opt,signal:ctl.signal});
+  }finally{
+    clearTimeout(t);
+  }
+}
+async function setLocalUpdated(ts=Date.now()){
+  LOCAL_UPDATED_AT=ts;
+  try{await storage.set(KEY_UPDATED_AT,String(ts));}catch{}
+}
+async function persistLocalSnapshot(){
+  APP.sessions=(APP.sessions||[]).slice(-100);
+  APP.testAttempts=(APP.testAttempts||[]).slice(-200);
+  try{await storage.set(KEY_SESSIONS,JSON.stringify(APP.sessions));}catch{}
+  try{await storage.set(KEY_ATTEMPTS,JSON.stringify(APP.testAttempts));}catch{}
+  try{await storage.set(KEY_PIN,APP.tutorPin);}catch{}
+}
+function cloudStatusClass(){
+  return APP.cloudStatus.toLowerCase().includes('error')?'warn':'ok';
+}
+
+async function cloudPull(){
+  if(!cloudConfigured())return{ok:false,error:'disabled'};
+  const studentId=sanitizeStudentId(APP.cloudStudentId);
+  APP.cloudStudentId=studentId;
+  const url=`${cloudBaseUrl()}/${CLOUD_SYNC.table}?student_id=eq.${encodeURIComponent(studentId)}&select=sessions,attempts,tutor_pin,updated_at&limit=1`;
+  try{
+    const res=await fetchWithTimeout(url,{headers:cloudHeaders({Accept:'application/json'})});
+    if(!res.ok)return{ok:false,error:`HTTP ${res.status}`};
+    const rows=await res.json();
+    if(!Array.isArray(rows)||rows.length===0)return{ok:true,row:null};
+    const row=rows[0];
+    return{
+      ok:true,
+      row:{
+        sessions:Array.isArray(row.sessions)?row.sessions.slice(-100):[],
+        attempts:Array.isArray(row.attempts)?row.attempts.slice(-200):[],
+        tutorPin:/^\d{4}$/.test(row.tutor_pin||'')?row.tutor_pin:'1234',
+        updatedAt:Date.parse(row.updated_at||'')||0
+      }
+    };
+  }catch(err){
+    return{ok:false,error:err?.name==='AbortError'?'timeout':(err?.message||'network error')};
+  }
+}
+async function cloudPush(){
+  if(!cloudConfigured())return{ok:false,error:'disabled'};
+  const studentId=sanitizeStudentId(APP.cloudStudentId);
+  APP.cloudStudentId=studentId;
+  const payload=[{
+    student_id:studentId,
+    sessions:(APP.sessions||[]).slice(-100),
+    attempts:(APP.testAttempts||[]).slice(-200),
+    tutor_pin:APP.tutorPin,
+    updated_at:new Date().toISOString(),
+  }];
+  const url=`${cloudBaseUrl()}/${CLOUD_SYNC.table}?on_conflict=student_id`;
+  try{
+    const res=await fetchWithTimeout(url,{
+      method:'POST',
+      headers:cloudHeaders({
+        'Content-Type':'application/json',
+        'Prefer':'resolution=merge-duplicates,return=representation'
+      }),
+      body:JSON.stringify(payload)
+    });
+    if(!res.ok)return{ok:false,error:`HTTP ${res.status}`};
+    const rows=await res.json().catch(()=>[]);
+    const updatedAt=Date.parse(rows?.[0]?.updated_at||'')||Date.now();
+    APP.cloudLastSync=updatedAt;
+    await setLocalUpdated(updatedAt);
+    return{ok:true,updatedAt};
+  }catch(err){
+    return{ok:false,error:err?.name==='AbortError'?'timeout':(err?.message||'network error')};
+  }
+}
+async function syncCloudOnLoad(){
+  if(!cloudConfigured()){
+    APP.cloudStatus='Local only (cloud not configured)';
+    return;
+  }
+  APP.cloudStatus='Cloud connecting...';
+  const pulled=await cloudPull();
+  if(!pulled.ok){
+    APP.cloudStatus='Cloud error (using local)';
+    return;
+  }
+  if(!pulled.row){
+    APP.cloudStatus='Cloud ready';
+    if(APP.sessions.length||APP.testAttempts.length||APP.tutorPin!=='1234'){
+      const pushed=await cloudPush();
+      if(pushed.ok)APP.cloudStatus='Cloud synced';
+    }
+    return;
+  }
+  const remoteTs=pulled.row.updatedAt||0;
+  if(remoteTs>=LOCAL_UPDATED_AT){
+    APP.sessions=pulled.row.sessions;
+    APP.testAttempts=pulled.row.attempts;
+    APP.tutorPin=pulled.row.tutorPin;
+    APP.cloudLastSync=remoteTs;
+    await persistLocalSnapshot();
+    await setLocalUpdated(remoteTs||Date.now());
+    APP.cloudStatus='Cloud synced';
+  }else{
+    const pushed=await cloudPush();
+    APP.cloudStatus=pushed.ok?'Cloud synced':'Cloud error (using local)';
+  }
+}
+async function syncCloudNow(){
+  if(!cloudConfigured()){APP.cloudStatus='Local only (cloud not configured)';return false;}
+  APP.cloudStatus='Cloud syncing...';
+  const pulled=await cloudPull();
+  if(!pulled.ok){APP.cloudStatus='Cloud error (sync failed)';return false;}
+  if(pulled.row){
+    APP.sessions=pulled.row.sessions;
+    APP.testAttempts=pulled.row.attempts;
+    APP.tutorPin=pulled.row.tutorPin;
+    APP.cloudLastSync=pulled.row.updatedAt||APP.cloudLastSync;
+  }
+  await persistLocalSnapshot();
+  const pushed=await cloudPush();
+  APP.cloudStatus=pushed.ok?'Cloud synced':'Cloud error (sync failed)';
+  return pushed.ok;
+}
+
 async function loadAll(){
-  try{const r=await storage.get(KEY_SESSIONS);if(r?.value)APP.sessions=JSON.parse(r.value);}catch{}
-  try{const r=await storage.get(KEY_ATTEMPTS);if(r?.value)APP.testAttempts=JSON.parse(r.value);}catch{}
-  try{const r=await storage.get(KEY_PIN);if(r?.value)APP.tutorPin=r.value;}catch{}
+  try{
+    const r=await storage.get(KEY_SESSIONS);
+    APP.sessions=safeJsonParseArray(r?.value).slice(-100);
+  }catch{}
+  try{
+    const r=await storage.get(KEY_ATTEMPTS);
+    APP.testAttempts=safeJsonParseArray(r?.value).slice(-200);
+  }catch{}
+  try{
+    const r=await storage.get(KEY_PIN);
+    if(r?.value)APP.tutorPin=r.value;
+  }catch{}
+  try{
+    const r=await storage.get(KEY_CLOUD_STUDENT);
+    if(r?.value)APP.cloudStudentId=sanitizeStudentId(r.value);
+    else APP.cloudStudentId=sanitizeStudentId(CLOUD_SYNC.defaultStudentId);
+  }catch{
+    APP.cloudStudentId=sanitizeStudentId(CLOUD_SYNC.defaultStudentId);
+  }
+  try{
+    const r=await storage.get(KEY_UPDATED_AT);
+    const n=Number(r?.value||0);
+    LOCAL_UPDATED_AT=Number.isFinite(n)?n:0;
+  }catch{}
+  await syncCloudOnLoad();
 }
 async function saveSessions(){
-  try{await storage.set(KEY_SESSIONS,JSON.stringify(APP.sessions.slice(-100)));}catch{}
+  await persistLocalSnapshot();
+  await setLocalUpdated(Date.now());
+  const pushed=await cloudPush();
+  if(cloudConfigured()&&!pushed.ok)APP.cloudStatus='Cloud error (save pending)';
 }
 async function appendAttempt(a){
   APP.testAttempts.push(a);
-  try{await storage.set(KEY_ATTEMPTS,JSON.stringify(APP.testAttempts.slice(-200)));}catch{}
+  await persistLocalSnapshot();
+  await setLocalUpdated(Date.now());
+  const pushed=await cloudPush();
+  if(cloudConfigured()&&!pushed.ok)APP.cloudStatus='Cloud error (save pending)';
 }
 async function saveTutorPin(pin){
   APP.tutorPin=pin;
-  try{await storage.set(KEY_PIN,pin);}catch{}
+  await persistLocalSnapshot();
+  await setLocalUpdated(Date.now());
+  const pushed=await cloudPush();
+  if(cloudConfigured()&&!pushed.ok)APP.cloudStatus='Cloud error (save pending)';
 }
 
 // ================================================================
@@ -756,6 +982,9 @@ function sTutorDash(){
       }).join('');
 
   }else{
+    const cloudReady=cloudConfigured();
+    const cloudLast=APP.cloudLastSync?fmtDate(new Date(APP.cloudLastSync).toISOString()):'not yet';
+    const cloudStatus=cloudReady?`${APP.cloudStatus} · last sync ${cloudLast}`:'Local only (cloud API not configured)';
     content=`
       <div class="set-card">
         <div class="set-label">🔐 Change Tutor PIN</div>
@@ -763,6 +992,19 @@ function sTutorDash(){
         <input type="text" inputmode="numeric" maxlength="4" pattern="[0-9]{4}"
           class="set-input" id="newPin" placeholder="••••"/>
         <button class="submit-btn" style="background:var(--plum);margin-top:10px" data-a="save-pin">Save New PIN</button>
+      </div>
+      <div class="set-card">
+        <div class="set-label">☁️ Cross-Device Sync</div>
+        <div class="set-sub">${cloudReady
+          ?'Use the same Sync ID on all devices to share one student profile.'
+          :'Configure Supabase in CLOUD_SYNC (inside index.html) to enable cloud sync.'}</div>
+        <input type="text" class="set-input compact" id="cloudStudentId" maxlength="40"
+          value="${escapeHtml(APP.cloudStudentId)}" placeholder="student sync id"/>
+        <div class="sync-status ${cloudStatusClass()}">${cloudStatus}</div>
+        <div class="act-row">
+          <button class="act-btn secondary" data-a="save-sync-id">Save Sync ID</button>
+          <button class="act-btn primary" data-a="sync-now">Sync Now</button>
+        </div>
       </div>
       <div class="set-card">
         <div class="set-label">🗑️ Clear All Student Data</div>
@@ -1117,6 +1359,7 @@ function handle(a,v){
       if(APP.pinBuffer.length===4)setTimeout(()=>{
         if(APP.pinBuffer===APP.tutorPin){
           APP.tutorAuth=true;APP.pinBuffer='';APP.tutorTab='sessions';go('tutor_dash');
+          syncCloudNow().then(()=>{if(APP.screen==='tutor_dash')go('tutor_dash');});
         }else{
           const dots=document.getElementById('pinDots');
           if(dots){
@@ -1148,13 +1391,35 @@ function handle(a,v){
       if(!/^\d{4}$/.test(p)){toast('PIN must be exactly 4 digits');return;}
       saveTutorPin(p).then(()=>{toast('✅ PIN updated!');if(inp)inp.value='';});break;
     }
+    case 'save-sync-id':{
+      const inp=document.getElementById('cloudStudentId');
+      const nextId=sanitizeStudentId(inp?.value||'');
+      if((nextId!==APP.cloudStudentId)&&(APP.sessions.length||APP.testAttempts.length)){
+        if(!confirm('Switch Sync ID? You may load a different student history.'))break;
+      }
+      APP.cloudStudentId=nextId;
+      storage.set(KEY_CLOUD_STUDENT,nextId).then(()=>syncCloudNow()).then(ok=>{
+        go('tutor_dash');
+        toast(ok?'✅ Sync ID saved and synced':'Saved locally (cloud unavailable)');
+      });
+      break;
+    }
+    case 'sync-now':
+      if(!cloudConfigured()){toast('Cloud API not configured yet');go('tutor_dash');break;}
+      syncCloudNow().then(ok=>{
+        go('tutor_dash');
+        toast(ok?'✅ Cloud sync complete':'Cloud sync failed (local data kept)');
+      });break;
     case 'clear-data':
       if(confirm('Delete ALL student sessions and test results permanently?')){
         APP.sessions=[];APP.testAttempts=[];
-        Promise.all([
-          storage.set(KEY_SESSIONS,'[]'),
-          storage.set(KEY_ATTEMPTS,'[]'),
-        ]).then(()=>go('tutor_dash'));
+        persistLocalSnapshot()
+          .then(()=>setLocalUpdated(Date.now()))
+          .then(()=>cloudPush())
+          .then(r=>{
+            if(cloudConfigured()&&!r.ok)toast('Cleared locally; cloud sync failed');
+            go('tutor_dash');
+          });
       }break;
   }
 }
