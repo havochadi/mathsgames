@@ -555,14 +555,14 @@ async function loadLocalSnapshot(){
   }
   try{
     const r=await storage.get(scopedKey(KEY_ATTEMPTS));
-    APP.testAttempts=safeJsonParseArray(r?.value).slice(-200);
+    APP.testAttempts=selectBestAttempts(safeJsonParseArray(r?.value)).slice(-200);
   }catch{
     APP.testAttempts=[];
   }
 }
 async function persistLocalSnapshot(){
   APP.sessions=(APP.sessions||[]).slice(-100);
-  APP.testAttempts=(APP.testAttempts||[]).slice(-200);
+  APP.testAttempts=selectBestAttempts(APP.testAttempts).slice(-200);
   try{await storage.set(scopedKey(KEY_SESSIONS),JSON.stringify(APP.sessions));}catch{}
   try{await storage.set(scopedKey(KEY_ATTEMPTS),JSON.stringify(APP.testAttempts));}catch{}
   try{await storage.set(KEY_PIN,APP.tutorPin);}catch{}
@@ -577,6 +577,78 @@ function ensureStudentContext(){
   }
   return true;
 }
+function difficultyStarMultiplier(difficulty){
+  const key=String(difficulty||'easy').toLowerCase();
+  if(key==='hard')return 1.75;
+  if(key==='medium')return 1.35;
+  return 1;
+}
+function testById(testId){
+  return TESTS.find(t=>t.id===testId)||null;
+}
+function attemptDifficultyMultiplier(attempt){
+  const test=testById(String(attempt?.testId||''));
+  return difficultyStarMultiplier(attempt?.difficulty||test?.difficulty||'easy');
+}
+function testStarWorth(test){
+  const qCount=Math.max(1,Number(test?.questions?.length||1));
+  const diffMul=difficultyStarMultiplier(test?.difficulty||'easy');
+  return{
+    base:Math.max(1,Math.round(qCount*diffMul)),
+    max:Math.max(1,Math.round(qCount*4*diffMul)),
+  };
+}
+function isAttemptBetter(candidate,current){
+  const cScore=Math.max(0,Number(candidate?.score||0));
+  const cTotal=Math.max(1,Number(candidate?.total||1));
+  const rScore=Math.max(0,Number(current?.score||0));
+  const rTotal=Math.max(1,Number(current?.total||1));
+  const cRatio=cScore/cTotal;
+  const rRatio=rScore/rTotal;
+  if(Math.abs(cRatio-rRatio)>1e-9)return cRatio>rRatio;
+  if(cScore!==rScore)return cScore>rScore;
+  const cStars=calcAttemptStars(candidate);
+  const rStars=calcAttemptStars(current);
+  if(cStars!==rStars)return cStars>rStars;
+  const cDur=Math.max(1,Number(candidate?.duration||1));
+  const rDur=Math.max(1,Number(current?.duration||1));
+  if(cDur!==rDur)return cDur<rDur;
+  return (Date.parse(candidate?.date||'')||0)>(Date.parse(current?.date||'')||0);
+}
+function upsertBestAttempt(attempt){
+  const idx=APP.testAttempts.findIndex(x=>String(x?.testId||'')===String(attempt?.testId||''));
+  if(idx<0){
+    APP.testAttempts.push(attempt);
+    return{changed:true,replaced:false};
+  }
+  if(isAttemptBetter(attempt,APP.testAttempts[idx])){
+    APP.testAttempts[idx]=attempt;
+    return{changed:true,replaced:true};
+  }
+  return{changed:false,replaced:false};
+}
+function selectBestAttempts(attempts){
+  const grouped=new Map();
+  for(const raw of (Array.isArray(attempts)?attempts:[])){
+    const a=raw&&typeof raw==='object'?raw:null;
+    if(!a)continue;
+    const key=String(
+      a.testId
+      ||a.testName
+      ||a.id
+      ||`unknown-${Date.parse(a?.date||'')||0}-${Number(a?.score||0)}-${Number(a?.duration||0)}`
+    );
+    if(!grouped.has(key)){
+      grouped.set(key,a);
+      continue;
+    }
+    const current=grouped.get(key);
+    if(isAttemptBetter(a,current))grouped.set(key,a);
+  }
+  return Array.from(grouped.values()).sort((a,b)=>
+    Date.parse(b?.date||0)-Date.parse(a?.date||0)
+  );
+}
 function calcAttemptStars(attempt){
   const score=Math.max(0,Number(attempt?.score||0));
   const total=Math.max(1,Number(attempt?.total||1));
@@ -588,12 +660,11 @@ function calcAttemptStars(attempt){
   const timeMultiplier=speedRatio>=1
     ?Math.min(4,1+fastBonus*1.6)
     :Math.max(0.7,speedRatio);
-  return Math.max(1,Math.round(score*timeMultiplier));
+  const difficultyMultiplier=attemptDifficultyMultiplier(attempt);
+  return Math.max(1,Math.round(score*timeMultiplier*difficultyMultiplier));
 }
 function computeLeaderboardRow(studentName,attempts){
-  const safeAttempts=(Array.isArray(attempts)?attempts:[]).slice().sort((a,b)=>
-    Date.parse(b?.date||0)-Date.parse(a?.date||0)
-  );
+  const safeAttempts=selectBestAttempts(attempts);
   const testDetails=safeAttempts.map(a=>({
     testName:a.testName||'Test',
     score:Number(a.score||0),
@@ -687,7 +758,7 @@ async function cloudPull(){
         row:{
           studentName:normalizeStudentName(row.student_name||APP.studentName||studentId),
           sessions:Array.isArray(row.sessions)?row.sessions.slice(-100):[],
-          attempts:Array.isArray(row.attempts)?row.attempts.slice(-200):[],
+          attempts:selectBestAttempts(row.attempts).slice(-200),
           tutorPin:/^\d{4}$/.test(row.tutor_pin||'')?row.tutor_pin:'1234',
           updatedAt:Date.parse(row.updated_at||'')||0
         }
@@ -1066,13 +1137,15 @@ async function saveSessions(){
   if(cloudConfigured()&&!pushed.ok)APP.cloudStatus='Cloud error (save pending)';
 }
 async function appendAttempt(a){
-  if(!ensureStudentContext())return;
+  if(!ensureStudentContext())return{saved:false,reason:'no-student'};
   a.stars=calcAttemptStars(a);
-  APP.testAttempts.push(a);
+  const upd=upsertBestAttempt(a);
+  if(!upd.changed)return{saved:false,reason:'kept-best'};
   await persistLocalSnapshot();
   await setLocalUpdated(Date.now());
   const pushed=await cloudPush();
   if(cloudConfigured()&&!pushed.ok)APP.cloudStatus='Cloud error (save pending)';
+  return{saved:true,replaced:upd.replaced};
 }
 async function saveTutorPin(pin){
   APP.tutorPin=pin;
@@ -1293,7 +1366,9 @@ function sTestMenu(){
     <div style="width:60px"></div>
   </div>
   <div class="test-grid">
-    ${TESTS.map(t=>`
+    ${TESTS.map(t=>{
+      const worth=testStarWorth(t);
+      return`
       <div class="test-card" data-a="start-test" data-val="${t.id}">
         <div class="test-emoji">${t.emoji}</div>
         <div>
@@ -1302,9 +1377,12 @@ function sTestMenu(){
           <div class="test-meta">
             <span class="tag ${t.difficulty}">${cap(t.difficulty)}</span>
             <span class="tag" style="background:#f0f0f0">${t.questions.length} questions</span>
+            <span class="tag" style="background:#fff4d6">⭐ Base ${worth.base}</span>
+            <span class="tag" style="background:#e8f6ff">⭐ Max ${worth.max}</span>
           </div>
         </div>
-      </div>`).join('')}
+      </div>`;
+    }).join('')}
   </div>
 </div>`;
 }
@@ -1746,7 +1824,8 @@ async function submitTest(raw){
     const attempt={
       id:'a'+Date.now(),
       testId:t.id,
-      testName:obj.name,
+      testName:obj?.name||'Test',
+      difficulty:obj?.difficulty||'easy',
       date:new Date().toISOString(),
       duration:APP.sessionStart?Math.floor((Date.now()-APP.sessionStart)/1000):0,
       score,total:t.questions.length,
@@ -1760,8 +1839,13 @@ async function submitTest(raw){
         hint:a.q.hint||''
       }))
     };
-    await appendAttempt(attempt);
-    await endSession({testName:obj.name,score:`${score}/${t.questions.length}`,testId:t.id});
+    const saveResult=await appendAttempt(attempt);
+    await endSession({testName:obj?.name||'Test',score:`${score}/${t.questions.length}`,testId:t.id});
+    if(saveResult?.reason==='kept-best'){
+      toast('Best score kept for this quiz');
+    }else if(saveResult?.replaced){
+      toast('Higher score replaced your previous result');
+    }
     go('test_results');
   }else{
     t.current++;go('test_active');
