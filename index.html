@@ -388,6 +388,7 @@ const APP={
   tutorPin:'1234',
   pinBuffer:'',
   selectedAttempt:null,
+  selectedAttemptSource:'tutor',
   cloudStudentId:'',
   cloudStatus:'Local only',
   cloudLastSync:0,
@@ -615,39 +616,124 @@ function isAttemptBetter(candidate,current){
   if(cDur!==rDur)return cDur<rDur;
   return (Date.parse(candidate?.date||'')||0)>(Date.parse(current?.date||'')||0);
 }
+function normalizeAttemptRecord(raw){
+  const base=(raw&&typeof raw==='object')?raw:{};
+  return{
+    id:String(base.id||('a'+Date.now()+Math.floor(Math.random()*1000))),
+    testId:String(base.testId||''),
+    testName:String(base.testName||'Test'),
+    difficulty:String(base.difficulty||testById(base.testId)?.difficulty||'easy'),
+    date:base.date||new Date().toISOString(),
+    duration:Math.max(1,Number(base.duration||0)),
+    score:Math.max(0,Number(base.score||0)),
+    total:Math.max(1,Number(base.total||1)),
+    answers:Array.isArray(base.answers)?base.answers:[],
+  };
+}
+function attemptHistoryEntries(attempt){
+  if(Array.isArray(attempt?.history)&&attempt.history.length){
+    return attempt.history
+      .map(normalizeAttemptRecord)
+      .sort((a,b)=>Date.parse(b?.date||0)-Date.parse(a?.date||0));
+  }
+  return[normalizeAttemptRecord(attempt)];
+}
+function attachHistory(bestAttempt,historyList){
+  const best=normalizeAttemptRecord(bestAttempt);
+  const seen=new Set();
+  const merged=(Array.isArray(historyList)?historyList:[])
+    .map(normalizeAttemptRecord)
+    .sort((a,b)=>Date.parse(b?.date||0)-Date.parse(a?.date||0))
+    .filter(item=>{
+      const key=String(item.id||'');
+      if(!key)return true;
+      if(seen.has(key))return false;
+      seen.add(key);
+      return true;
+    });
+  return{...best,history:merged.length?merged:[best]};
+}
 function upsertBestAttempt(attempt){
-  const idx=APP.testAttempts.findIndex(x=>String(x?.testId||'')===String(attempt?.testId||''));
+  const incoming=normalizeAttemptRecord(attempt);
+  const idx=APP.testAttempts.findIndex(x=>String(x?.testId||'')===String(incoming?.testId||''));
   if(idx<0){
-    APP.testAttempts.push(attempt);
-    return{changed:true,replaced:false};
+    APP.testAttempts.push(attachHistory(incoming,[incoming]));
+    return{changed:true,replaced:false,historyAdded:true};
   }
-  if(isAttemptBetter(attempt,APP.testAttempts[idx])){
-    APP.testAttempts[idx]=attempt;
-    return{changed:true,replaced:true};
+  const current=APP.testAttempts[idx];
+  const mergedHistory=[...attemptHistoryEntries(current),incoming]
+    .sort((a,b)=>Date.parse(b?.date||0)-Date.parse(a?.date||0));
+  if(isAttemptBetter(incoming,current)){
+    APP.testAttempts[idx]=attachHistory(incoming,mergedHistory);
+    return{changed:true,replaced:true,historyAdded:true};
   }
-  return{changed:false,replaced:false};
+  APP.testAttempts[idx]=attachHistory(current,mergedHistory);
+  return{changed:true,replaced:false,historyAdded:true,keptBest:true};
 }
 function selectBestAttempts(attempts){
   const grouped=new Map();
   for(const raw of (Array.isArray(attempts)?attempts:[])){
-    const a=raw&&typeof raw==='object'?raw:null;
-    if(!a)continue;
+    const normalized=normalizeAttemptRecord(raw);
     const key=String(
-      a.testId
-      ||a.testName
-      ||a.id
-      ||`unknown-${Date.parse(a?.date||'')||0}-${Number(a?.score||0)}-${Number(a?.duration||0)}`
+      normalized.testId
+      ||normalized.testName
+      ||normalized.id
+      ||`unknown-${Date.parse(normalized?.date||'')||0}-${Number(normalized?.score||0)}-${Number(normalized?.duration||0)}`
     );
+    const incomingHistory=attemptHistoryEntries(raw);
     if(!grouped.has(key)){
-      grouped.set(key,a);
+      grouped.set(key,attachHistory(normalized,incomingHistory));
       continue;
     }
     const current=grouped.get(key);
-    if(isAttemptBetter(a,current))grouped.set(key,a);
+    const mergedHistory=[...attemptHistoryEntries(current),...incomingHistory]
+      .sort((a,b)=>Date.parse(b?.date||0)-Date.parse(a?.date||0));
+    const best=isAttemptBetter(normalized,current)?normalized:current;
+    grouped.set(key,attachHistory(best,mergedHistory));
   }
   return Array.from(grouped.values()).sort((a,b)=>
     Date.parse(b?.date||0)-Date.parse(a?.date||0)
   );
+}
+function allAttemptEntries(attempts){
+  const rows=[];
+  const bestAttempts=selectBestAttempts(attempts);
+  bestAttempts.forEach(bestRaw=>{
+    const best=normalizeAttemptRecord(bestRaw);
+    const history=attemptHistoryEntries(bestRaw);
+    history.forEach((entryRaw,index)=>{
+      const entry=normalizeAttemptRecord({
+        ...entryRaw,
+        testId:entryRaw?.testId||best.testId,
+        testName:entryRaw?.testName||best.testName,
+        difficulty:entryRaw?.difficulty||best.difficulty,
+        total:entryRaw?.total||best.total,
+      });
+      const ts=Date.parse(entry?.date||'')||0;
+      const attemptRef=[
+        encodeURIComponent(String(entry.testId||best.testId||'')),
+        encodeURIComponent(String(entry.id||'')),
+        String(ts),
+        String(index)
+      ].join('|');
+      rows.push({
+        ...entry,
+        attemptRef,
+        isBest:String(entry.id||'')===String(best.id||''),
+        attemptNo:index+1,
+        attemptsForTest:history.length,
+      });
+    });
+  });
+  return rows.sort((a,b)=>{
+    const tsDiff=(Date.parse(b?.date||'')||0)-(Date.parse(a?.date||'')||0);
+    if(tsDiff!==0)return tsDiff;
+    return Number(b?.score||0)-Number(a?.score||0);
+  });
+}
+function attemptByRef(ref){
+  if(!ref)return null;
+  return allAttemptEntries(APP.testAttempts).find(x=>x.attemptRef===ref)||null;
 }
 function calcAttemptStars(attempt){
   const score=Math.max(0,Number(attempt?.score||0));
@@ -1102,6 +1188,8 @@ async function loadStudentByName(name){
   APP.practice={mode:'convert',level:1,qNum:1,currentQ:null,answered:false,history:[]};
   APP.test={id:null,questions:[],current:0,answers:[]};
   APP.review={source:null,items:[],backTo:'home'};
+  APP.selectedAttempt=null;
+  APP.selectedAttemptSource='tutor';
   return true;
 }
 function logoutStudent(){
@@ -1109,6 +1197,8 @@ function logoutStudent(){
   APP.cloudStudentId='';
   APP.sessions=[];
   APP.testAttempts=[];
+  APP.selectedAttempt=null;
+  APP.selectedAttemptSource='tutor';
   APP.cloudStatus='No student logged in';
   APP.cloudLastSync=0;
   APP.screen='student_login';
@@ -1210,10 +1300,10 @@ function render(){
     student_login:sStudentLogin,
     home:sHome,practice:sPractice,
     test_menu:sTestMenu,test_active:sTestActive,
-    test_results:sTestResults,review:sReview,
+    test_results:sTestResults,test_history:sTestHistory,review:sReview,
     leaderboard:sLeaderboard,
     tutor_login:sTutorLogin,tutor_dash:sTutorDash,
-    tutor_test_detail:sTutorTestDetail,
+    tutor_test_detail:sAttemptDetail,attempt_detail:sAttemptDetail,
   };
   document.getElementById('app').innerHTML=(map[APP.screen]||sHome)();
   if(APP.screen==='practice')renderPracticeQ();
@@ -1266,6 +1356,11 @@ function sHome(){
       <div class="menu-name">Test</div>
       <div class="menu-desc">Take a scored quiz</div>
     </div>
+    <div class="menu-card" data-a="go-test-history">
+      <span class="menu-emoji">📚</span>
+      <div class="menu-name">My Test History</div>
+      <div class="menu-desc">Review past attempts</div>
+    </div>
     <div class="menu-card" data-a="go-leaderboard">
       <span class="menu-emoji">🏅</span>
       <div class="menu-name">Leaderboard</div>
@@ -1314,6 +1409,42 @@ function sLeaderboard(){
             <div class="sess-right"><div class="sess-dur">⭐ ${t.stars}</div></div>
           </div>`).join('')}
       </div>`).join('')}
+</div>`;
+}
+
+function sTestHistory(){
+  const attempts=allAttemptEntries(APP.testAttempts);
+  return `
+<div class="screen">
+  <div class="nav">
+    <button class="nav-back" data-a="back-home">← Home</button>
+    <div class="nav-title">My Test History</div>
+    <div style="width:60px"></div>
+  </div>
+  ${attempts.length===0
+    ?'<div class="no-data">No completed tests yet. Finish a quiz to review it here.</div>'
+    :attempts.map(a=>{
+      const pct=Math.round(a.score/a.total*100);
+      const col=pct>=80?'var(--mint)':pct>=50?'var(--sun)':'var(--coral)';
+      const test=testById(String(a.testId||''));
+      const stars=calcAttemptStars(a);
+      return `
+      <button class="att-item" style="width:100%;text-align:left" data-a="open-attempt" data-val="${escapeHtml(a.attemptRef)}">
+        <div class="att-row1">
+          <div class="att-name">${test?.emoji||'📝'} ${escapeHtml(a.testName||'Test')}</div>
+          <div class="att-score">${a.score}/${a.total} <span style="font-size:12px;opacity:.65">(${pct}%)</span></div>
+        </div>
+        <div class="score-bar"><div class="score-fill" style="width:${pct}%;background:${col}"></div></div>
+        <div class="att-row2">
+          <span>${fmtDate(a.date)} · ⏱ ${fmtDur(a.duration)} · ⭐ ${stars}</span>
+          <span class="att-view">View answers →</span>
+        </div>
+        <div class="att-row2" style="margin-top:4px;opacity:.6">
+          <span>${a.isBest?'Counts toward leaderboard':'Retake kept for history'}</span>
+          <span>Attempt ${a.attemptNo}/${a.attemptsForTest}</span>
+        </div>
+      </button>`;
+    }).join('')}
 </div>`;
 }
 
@@ -1384,6 +1515,7 @@ function sTestMenu(){
       </div>`;
     }).join('')}
   </div>
+  <button class="act-btn secondary" style="width:100%;margin-top:12px" data-a="go-test-history">📚 Review Past Tests</button>
 </div>`;
 }
 
@@ -1509,7 +1641,7 @@ function sTutorLogin(){
 
 function sTutorDash(){
   const sess=[...APP.sessions].reverse();
-  const atts=[...APP.testAttempts].reverse();
+  const testHistory=allAttemptEntries(APP.testAttempts);
   const totalTime=APP.sessions.reduce((s,x)=>s+(x.duration||0),0);
   const totalStars=APP.testAttempts.reduce((sum,a)=>sum+calcAttemptStars(a),0);
   const studentNames=sortedUniqueStudentNames();
@@ -1543,20 +1675,26 @@ function sTutorDash(){
         </div>`).join('');
 
   }else if(APP.tutorTab==='tests'){
-    content=atts.length===0?`<div class="no-data">No tests completed yet.</div>`
-      :atts.map(a=>{
+    content=testHistory.length===0?`<div class="no-data">No tests completed yet.</div>`
+      :testHistory.map(a=>{
         const pct=Math.round(a.score/a.total*100);
         const col=pct>=80?'var(--mint)':pct>=50?'var(--sun)':'var(--coral)';
+        const test=testById(String(a.testId||''));
+        const stars=calcAttemptStars(a);
         return `
-          <div class="att-item" data-a="view-attempt" data-val="${a.id}">
+          <div class="att-item" data-a="view-attempt" data-val="${escapeHtml(a.attemptRef)}">
             <div class="att-row1">
-              <div class="att-name">${TESTS.find(t=>t.id===a.testId)?.emoji||'📝'} ${a.testName}</div>
+              <div class="att-name">${test?.emoji||'📝'} ${escapeHtml(a.testName||'Test')}</div>
               <div class="att-score">${a.score}/${a.total} <span style="font-size:12px;opacity:.65">(${pct}%)</span></div>
             </div>
             <div class="score-bar"><div class="score-fill" style="width:${pct}%;background:${col}"></div></div>
             <div class="att-row2">
-              <span>${fmtDate(a.date)} · ⏱ ${fmtDur(a.duration)}</span>
+              <span>${fmtDate(a.date)} · ⏱ ${fmtDur(a.duration)} · ⭐ ${stars}</span>
               <span class="att-view">View answers →</span>
+            </div>
+            <div class="att-row2" style="margin-top:4px;opacity:.6">
+              <span>${a.isBest?'Best result (leaderboard)':'Past retake'}</span>
+              <span>Attempt ${a.attemptNo}/${a.attemptsForTest}</span>
             </div>
           </div>`;
       }).join('');
@@ -1629,8 +1767,8 @@ function sTutorDash(){
         <div class="t-stat-l">Total Time</div>
       </div>
       <div class="t-stat">
-        <div class="t-stat-n">${APP.testAttempts.length}</div>
-        <div class="t-stat-l">Tests Taken</div>
+        <div class="t-stat-n">${testHistory.length}</div>
+        <div class="t-stat-l">Attempts Done</div>
       </div>
       <div class="t-stat">
         <div class="t-stat-n">⭐ ${totalStars}</div>
@@ -1647,21 +1785,31 @@ function sTutorDash(){
 </div>`;
 }
 
-function sTutorTestDetail(){
-  const a=APP.selectedAttempt;if(!a){APP.tutorTab='tests';return sTutorDash();}
+function sAttemptDetail(){
+  const a=APP.selectedAttempt;
+  const isStudentView=APP.selectedAttemptSource==='student';
+  if(!a){
+    if(isStudentView)return sTestHistory();
+    APP.tutorTab='tests';
+    return sTutorDash();
+  }
   const pct=Math.round(a.score/a.total*100);
-  const obj=TESTS.find(t=>t.id===a.testId);
+  const obj=testById(String(a.testId||''));
   const col=pct>=80?'var(--mint)':pct>=50?'var(--sun)':'var(--coral)';
+  const stars=calcAttemptStars(a);
+  const backAction=isStudentView?'back-test-history':'back-to-tests';
+  const backLabel=isStudentView?'Test History':'Test Results';
+  const answerLabel=isStudentView?'Your answer':'Student answered';
   return `
 <div class="screen">
   <div class="nav">
-    <button class="nav-back" data-a="back-to-tests">← Test Results</button>
-    <div class="nav-title">${obj?.emoji||'📝'} ${a.testName}</div>
+    <button class="nav-back" data-a="${backAction}">← ${backLabel}</button>
+    <div class="nav-title">${obj?.emoji||'📝'} ${escapeHtml(a.testName||'Test')}</div>
     <div style="width:60px"></div>
   </div>
   <div class="results-card" style="margin-bottom:14px">
     <div class="score-big" style="color:${col}">${a.score}/${a.total}</div>
-    <div class="score-sub">${pct}%</div>
+    <div class="score-sub">${pct}% · ⭐ ${stars}</div>
     <div class="score-sub" style="margin-top:4px;font-size:13px">${fmtDate(a.date)} · ⏱ ${fmtDur(a.duration)}</div>
     <div class="breakdown" style="margin-top:10px">
       <div class="chip ok">✅ ${a.score} correct</div>
@@ -1672,12 +1820,12 @@ function sTutorTestDetail(){
     <div class="rev-item ${ans.correct?'ok':'no'}">
       <div class="rev-icon">${ans.correct?'✅':'❌'}</div>
       <div class="rev-qnum">Q${i+1}</div>
-      <div class="rev-q">${ans.qText}</div>
+      <div class="rev-q">${escapeHtml(ans.qText||'')}</div>
       <div class="rev-answers">
-        <div class="rev-chip rev-user ${ans.correct?'ok':'no'}">Student answered: ${ans.userAnswer}</div>
-        ${!ans.correct?`<div class="rev-chip rev-correct">Correct: ${ans.correctAnswer}</div>`:''}
+        <div class="rev-chip rev-user ${ans.correct?'ok':'no'}">${answerLabel}: ${escapeHtml(ans.userAnswer||'')}</div>
+        ${!ans.correct?`<div class="rev-chip rev-correct">Correct: ${escapeHtml(ans.correctAnswer||'')}</div>`:''}
       </div>
-      ${ans.hint?`<div class="rev-hint">💡 ${ans.hint}</div>`:''}
+      ${ans.hint?`<div class="rev-hint">💡 ${escapeHtml(ans.hint)}</div>`:''}
     </div>`).join('')}
 </div>`;
 }
@@ -1988,6 +2136,9 @@ function handle(a,v){
     case 'go-test-menu':
       if(!APP.studentName){go('student_login');toast('Login with your name first');break;}
       go('test_menu');break;
+    case 'go-test-history':
+      if(!APP.studentName){go('student_login');toast('Login with your name first');break;}
+      go('test_history');break;
     case 'set-level':APP.practice.level=parseInt(v);APP.practice.qNum=1;go('practice');break;
     case 'set-mode':APP.practice.mode=v;APP.practice.qNum=1;go('practice');break;
     case 'submit-ans':{
@@ -2019,6 +2170,7 @@ function handle(a,v){
     case 'go-review-test':
       APP.review={source:'test',items:APP.test.answers,backTo:'test_results'};go('review');break;
     case 'back-test-menu':go('test_menu');break;
+    case 'back-test-history':go('test_history');break;
     case 'back-from-review':go(APP.review.backTo||'home');break;
     case 'back-home':{
       if(APP.sessionStart){
@@ -2063,8 +2215,15 @@ function handle(a,v){
     case 'tutor-logout':APP.tutorAuth=false;go(APP.studentName?'home':'student_login');break;
     case 't-tab':APP.tutorTab=v;go('tutor_dash');break;
     case 'view-attempt':
-      APP.selectedAttempt=APP.testAttempts.find(x=>x.id===v);
+      APP.selectedAttempt=attemptByRef(v);
+      APP.selectedAttemptSource='tutor';
+      if(!APP.selectedAttempt){toast('Attempt not found');go('tutor_dash');break;}
       go('tutor_test_detail');break;
+    case 'open-attempt':
+      APP.selectedAttempt=attemptByRef(v);
+      APP.selectedAttemptSource='student';
+      if(!APP.selectedAttempt){toast('Attempt not found');go('test_history');break;}
+      go('attempt_detail');break;
     case 'back-to-tests':APP.tutorTab='tests';go('tutor_dash');break;
 
     // ── Tutor: settings ──────────────────────────────────────────
@@ -2111,6 +2270,7 @@ function handle(a,v){
           APP.leaderboard=[];
           APP.studentDirectory=[];
           APP.selectedAttempt=null;
+          APP.selectedAttemptSource='tutor';
           APP.studentName='';
           APP.cloudStudentId='';
           await persistLocalSnapshot();
