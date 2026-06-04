@@ -1212,15 +1212,77 @@ function parseMassToGrams(text){
   const unit=m[2].toLowerCase();
   return unit.startsWith('kg')||unit.startsWith('kilogram')?value*1000:value;
 }
+function hasWord(text,word){
+  return new RegExp(`\\b${word}\\b`,'i').test(String(text||''));
+}
+function parseQuestionTime(text){
+  const m=String(text||'').match(/\b(\d{1,2}):(\d{2})\s*(am|pm)?\b/i);
+  if(!m)return null;
+  return{hour:Number(m[1]),minute:Number(m[2]||0),suffix:m[3]||''};
+}
+function parseQuestionMoney(text){
+  const raw=stripQuestionHtml(text);
+  const parts=[];
+  raw.replace(/\$(\d+(?:\.\d+)?)/g,(_,n)=>{
+    parts.push({label:`$${n}`,kind:'note'});
+    return _;
+  });
+  raw.replace(/\b(\d+)\s*cents?\b/gi,(_,n)=>{
+    parts.push({label:`${n}c`,kind:'coin'});
+    return _;
+  });
+  raw.replace(/\b(\d+)\s*fifty-cent coins?\b/gi,(_,n)=>{
+    for(let i=0;i<Math.min(Number(n),6);i++)parts.push({label:'50c',kind:'coin'});
+    return _;
+  });
+  raw.replace(/\b(\d+)\s*twenty-cent coins?\b/gi,(_,n)=>{
+    for(let i=0;i<Math.min(Number(n),6);i++)parts.push({label:'20c',kind:'coin'});
+    return _;
+  });
+  raw.replace(/\b(\d+)\s*ten-cent coins?\b/gi,(_,n)=>{
+    for(let i=0;i<Math.min(Number(n),6);i++)parts.push({label:'10c',kind:'coin'});
+    return _;
+  });
+  return parts.length?parts.slice(0,8):null;
+}
+function parsePictureGraph(text){
+  const raw=stripQuestionHtml(text);
+  const m=raw.match(/\b(?:shows?|has)\s+(\d+)\s+([a-z]+)?\s*(?:pictures?|symbols?|stars?|books?|cars?|balls?)\b.*?\b(?:each|every)\s+(?:picture|symbol|star|book|car|ball)?\s*(?:stands for|means|represents)?\s*(\d+)/i);
+  if(!m)return null;
+  const count=Math.min(Number(m[1]),12);
+  const each=Number(m[3]);
+  const word=(m[2]||'symbol').toLowerCase();
+  const emoji=word.includes('apple')?'🍎'
+    :word.includes('star')?'⭐'
+    :word.includes('book')?'📚'
+    :word.includes('car')?'🚗'
+    :word.includes('fish')?'🐟'
+    :word.includes('ball')?'⚽'
+    :'●';
+  return{count,each,emoji};
+}
+function parseFractionVisual(text){
+  const m=String(text||'').match(/\b(\d+)\s*\/\s*(\d+)\b/);
+  if(!m)return null;
+  const numerator=Number(m[1]),denominator=Number(m[2]);
+  if(!denominator||denominator>12)return null;
+  return{numerator:Math.min(numerator,denominator),denominator};
+}
+function parseRatioVisual(text){
+  const raw=String(text||'');
+  const m=raw.match(/\b(\d+)\s+:\s+(\d+)\b/);
+  if(!m)return null;
+  const left=Number(m[1]),right=Number(m[2]);
+  if(left>10||right>10)return null;
+  return{left,right};
+}
 function inferPracticeVisual(q){
   const plain=stripQuestionHtml(q.text).toLowerCase();
-  const topic=String(q.practiceTopic||'').toLowerCase();
   const unit=String(q.unit||'').toLowerCase();
-  const joined=`${plain} ${topic} ${unit}`;
   if(q.type==='compare'){
     const labelA=q.optA?.label||'A',labelB=q.optB?.label||'B';
     const massA=parseMassToGrams(labelA),massB=parseMassToGrams(labelB);
-    const isMass=joined.includes('heavier')||joined.includes('mass')||joined.includes('weight')||massA!=null||massB!=null;
+    const isMass=hasWord(plain,'heavier')||hasWord(plain,'lighter')||hasWord(plain,'mass')||hasWord(plain,'weight')||massA!=null||massB!=null;
     if(!isMass)return null;
     return{
       type:'compare-scale',
@@ -1229,24 +1291,27 @@ function inferPracticeVisual(q){
       right:{emoji:q.optB?.emoji||'B',label:labelB}
     };
   }
-  if(joined.includes('speed')||joined.includes('rate')||joined.includes('km/h')||joined.includes('m/s'))return{type:'road',title:'Distance, speed and time are connected'};
-  if(joined.includes('ratio')||/\d+\s*:\s*\d+/.test(plain))return{type:'ratio',title:'Each dot shows one ratio part'};
-  if(joined.includes('algebra')&&plain.includes('solve')&&plain.includes('='))return{type:'algebra',title:'Keep both sides balanced'};
-  if(joined.includes('circle')||joined.includes('circumference')||joined.includes('radius')||joined.includes('diameter'))return{type:'circle',title:'Circle parts: radius, diameter and edge'};
-  if(joined.includes('angle')||unit==='°')return{type:'angle',title:'Angles measure a turn'};
-  if(joined.includes('volume')||unit.includes('cm³')||joined.includes('cuboid')||joined.includes('cube'))return{type:'cuboid',title:'Volume fills a 3D space'};
-  if(joined.includes('area')||unit.includes('cm²'))return{type:'area',title:'Area counts the squares inside'};
-  if(joined.includes('graph')||joined.includes('chart')||joined.includes('table')||joined.includes('votes'))return{type:'graph',title:'Read the data carefully'};
-  if(joined.includes('fraction')||/\d+\s*\/\s*\d+/.test(plain))return{type:'fraction',title:'Fractions show equal parts'};
-  if(joined.includes('$')||joined.includes('cents')||joined.includes('dollars'))return{type:'money',title:'Use coins and notes to visualise money'};
-  if(joined.includes('time')||joined.includes('hour')||joined.includes('minutes')||unit==='min'||unit==='h'||joined.includes('am')||joined.includes('pm'))return{type:'clock',title:'Use the clock to count time'};
-  if(joined.includes('length')||unit==='cm'||unit==='m'||joined.includes('metres')||joined.includes('centimetres'))return{type:'ruler',title:'Use a ruler to compare lengths'};
-  if(joined.includes('mass')||joined.includes('weight')||unit==='g'||unit==='kg'||joined.includes('grams')||joined.includes('kilograms')){
-    const weightG=parseMassToGrams(q.text)||((unit==='kg'?Number(q.answer)*1000:unit==='g'?Number(q.answer):0)||1000);
-    return{type:'mass-scale',title:'Imagine the reading on a weighing scale',weightG};
-  }
-  if(joined.includes('litre')||joined.includes('millilitre')||unit==='ℓ'||unit==='ml')return{type:'jug',title:'Capacity tells how much a container holds'};
-  if(joined.includes('shape')||joined.includes('triangle')||joined.includes('rectangle')||joined.includes('square')||joined.includes('sphere')||joined.includes('cone'))return{type:'shapes',title:'Look at sides, corners and faces'};
+  const graph=parsePictureGraph(q.text);
+  if(graph)return{type:'picture-graph',title:`${graph.count} symbols, each worth ${graph.each}`,graph};
+  const money=parseQuestionMoney(q.text);
+  if(money)return{type:'money',title:'Only the money in this question',money};
+  const time=parseQuestionTime(q.text);
+  if(time)return{type:'clock',title:`Start from ${time.hour}:${String(time.minute).padStart(2,'0')}`,time};
+  const ratio=parseRatioVisual(q.text);
+  if((hasWord(plain,'ratio')||ratio)&&ratio)return{type:'ratio',title:`Ratio ${ratio.left} : ${ratio.right}`,ratio};
+  const fraction=parseFractionVisual(q.text);
+  if((hasWord(plain,'fraction')||fraction)&&fraction)return{type:'fraction',title:`${fraction.numerator} out of ${fraction.denominator} equal parts`,fraction};
+  if((plain.includes('km/h')||plain.includes('m/s')||hasWord(plain,'speed'))&&(hasWord(plain,'car')||hasWord(plain,'cyclist')||hasWord(plain,'runner')||hasWord(plain,'train')||hasWord(plain,'boat')||hasWord(plain,'travels')))return{type:'road',title:'Distance, speed and time are connected'};
+  if(hasWord(plain,'solve')&&plain.includes('='))return{type:'algebra',title:'Keep both sides balanced'};
+  if(hasWord(plain,'circle')||hasWord(plain,'circumference')||hasWord(plain,'radius')||hasWord(plain,'diameter')||hasWord(plain,'semicircle'))return{type:'circle',title:'Circle parts: radius, diameter and edge'};
+  if(hasWord(plain,'angle')||hasWord(plain,'angles')||unit==='°')return{type:'angle',title:'Angles measure a turn'};
+  if(hasWord(plain,'cube')&&!hasWord(plain,'cuboid'))return{type:'cube',title:'A cube has equal edges'};
+  if(hasWord(plain,'volume')||unit.includes('cm³')||hasWord(plain,'cuboid')||hasWord(plain,'tank'))return{type:'cuboid',title:'Volume fills a 3D space'};
+  if(!hasWord(plain,'area')&&!hasWord(plain,'perimeter')&&(
+    hasWord(plain,'ribbon')||hasWord(plain,'rope')||hasWord(plain,'pencil')||
+    hasWord(plain,'straw')||hasWord(plain,'plank')||hasWord(plain,'line')||
+    hasWord(plain,'length')||hasWord(plain,'longer')||hasWord(plain,'shorter')
+  ))return{type:'ruler',title:'Use a ruler to compare lengths'};
   return null;
 }
 function renderQuestionVisual(q){
@@ -1276,21 +1341,22 @@ function renderQuestionVisual(q){
     </div>`;
   if(v.type==='money')return `
     <div class="visual-card">${title}<div class="visual-money">
-      <span class="note">$10</span><span class="note">$5</span><span class="coin">50c</span><span class="coin">20c</span><span class="coin">10c</span>
+      ${v.money.map(part=>`<span class="${part.kind==='note'?'note':'coin'}">${escapeHtml(part.label)}</span>`).join('')}
     </div></div>`;
   if(v.type==='clock')return `
     <div class="visual-card">${title}<div class="visual-clock">
       <span class="clock-num n12">12</span><span class="clock-num n3">3</span><span class="clock-num n6">6</span><span class="clock-num n9">9</span>
-      <span class="clock-hand" style="transform:translate(-50%,-100%) rotate(40deg)"></span>
-      <span class="clock-hand min" style="transform:translate(-50%,-100%) rotate(120deg)"></span>
+      <span class="clock-hand" style="transform:translate(-50%,-100%) rotate(${((v.time.hour%12)*30)+(v.time.minute/2)}deg)"></span>
+      <span class="clock-hand min" style="transform:translate(-50%,-100%) rotate(${v.time.minute*6}deg)"></span>
     </div></div>`;
-  if(v.type==='graph')return `
-    <div class="visual-card">${title}<div class="visual-bars">
-      <div class="visual-bar" style="height:42px">A</div><div class="visual-bar" style="height:72px;background:var(--mint)">B</div><div class="visual-bar" style="height:56px;background:var(--coral)">C</div>
+  if(v.type==='picture-graph')return `
+    <div class="visual-card">${title}<div class="visual-row">
+      <div style="font-size:25px;line-height:1.4;max-width:260px;text-align:center">${Array.from({length:v.graph.count},()=>v.graph.emoji).join(' ')}</div>
+      <div class="visual-choice"><div class="visual-label">each = ${v.graph.each}</div></div>
     </div></div>`;
   if(v.type==='fraction')return `
     <div class="visual-card">${title}<div class="visual-fraction">
-      ${Array.from({length:8},(_,i)=>`<div class="frac-cell ${i<3?'fill':''}"></div>`).join('')}
+      ${Array.from({length:v.fraction.denominator},(_,i)=>`<div class="frac-cell ${i<v.fraction.numerator?'fill':''}"></div>`).join('')}
     </div></div>`;
   if(v.type==='area')return `
     <div class="visual-card">${title}<div class="visual-grid">
@@ -1313,6 +1379,14 @@ function renderQuestionVisual(q){
         <polygon points="75,62 158,62 158,92 75,92" fill="#D4EDDA" stroke="#2D2D2D" stroke-width="4"/>
       </svg>
     </div>`;
+  if(v.type==='cube')return `
+    <div class="visual-card visual-cuboid">${title}
+      <svg viewBox="0 0 150 120" aria-hidden="true">
+        <polygon points="42,28 96,28 118,50 64,50" fill="#E8F6FF" stroke="#2D2D2D" stroke-width="4"/>
+        <polygon points="42,28 64,50 64,96 42,74" fill="#FFF3CD" stroke="#2D2D2D" stroke-width="4"/>
+        <polygon points="64,50 118,50 118,96 64,96" fill="#D4EDDA" stroke="#2D2D2D" stroke-width="4"/>
+      </svg>
+    </div>`;
   if(v.type==='road')return `
     <div class="visual-card visual-road">${title}
       <svg viewBox="0 0 210 90" aria-hidden="true">
@@ -1324,7 +1398,7 @@ function renderQuestionVisual(q){
     </div>`;
   if(v.type==='ratio')return `
     <div class="visual-card">${title}<div class="visual-row">
-      <div>${'🔵'.repeat(3)}</div><div class="vs">:</div><div>${'🟢'.repeat(5)}</div>
+      <div>${'🔵'.repeat(v.ratio.left)}</div><div class="vs">:</div><div>${'🟢'.repeat(v.ratio.right)}</div>
     </div></div>`;
   if(v.type==='algebra')return `
     <div class="visual-card">${title}<div class="visual-row">
