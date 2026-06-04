@@ -142,6 +142,21 @@ body{font-family:'Fredoka',sans-serif;background:var(--cream);
   display:flex;align-items:flex-end;justify-content:space-around;padding:0 8px 8px}
 .visual-tick{width:3px;background:var(--ink);border-radius:3px}
 .visual-tick.big{height:34px}.visual-tick.mid{height:24px}.visual-tick.small{height:14px}
+.length-model{display:flex;flex-direction:column;gap:10px}
+.length-row{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.length-stack{display:flex;flex-direction:column;align-items:center;gap:8px}
+.length-ruler{position:relative;height:42px;min-width:74px;background:#FFEAA7;border:3px solid var(--ink);
+  border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--plum);
+  box-shadow:0 3px 0 rgba(45,45,45,.18);overflow:hidden}
+.length-ruler:before{content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(90deg,transparent 0 13px,rgba(45,45,45,.65) 13px 16px,transparent 16px 28px);
+  opacity:.35}
+.length-ruler span{position:relative;background:rgba(255,255,255,.75);border-radius:8px;padding:2px 8px}
+.length-op{font-size:26px;font-weight:800;color:var(--coral)}
+.length-question{background:white;border:3px dashed var(--plum);border-radius:14px;padding:9px 13px;
+  font-weight:800;color:var(--plum)}
+.length-tag{min-width:28px;font-weight:800;color:var(--plum)}
+.length-note{font-size:12px;font-weight:700;color:var(--plum);opacity:.75}
 .visual-money{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
 .coin,.note{display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--ink);
   font-weight:700;color:var(--ink)}
@@ -1177,6 +1192,453 @@ function matchesPracticeDifficulty(index,total,difficulty){
   if(difficulty==='medium')return ratio>=0.25&&ratio<=0.75;
   return ratio<=0.45;
 }
+function practiceDifficultyRank(difficulty){
+  return difficulty==='hard'?3:difficulty==='medium'?2:1;
+}
+function generatedPracticeId(test,difficulty,kind,index){
+  return `${test.id}_${difficulty}_${kind}_${Date.now()}_${index}_${Math.random().toString(36).slice(2,7)}`;
+}
+function makeGeneratedPracticeQ(test,difficulty,index,kind,text,answer,unit='',hint='',extra={}){
+  return{
+    type:'number',
+    id:generatedPracticeId(test,difficulty,kind,index),
+    text,answer,unit,hint,
+    practiceTopic:test.name,
+    practiceDifficulty:difficulty,
+    practiceIndex:1000+index,
+    practiceGenerated:true,
+    ...extra
+  };
+}
+function dollarsFromCents(cents){
+  return Number((cents/100).toFixed(2));
+}
+function moneyLabelFromCents(cents){
+  return `$${(cents/100).toFixed(2).replace(/\.00$/,'')}`;
+}
+function genNumberPracticeVariant(test,difficulty,index){
+  const level=Number(test.level||1),rank=practiceDifficultyRank(difficulty),v=index%5;
+  if(level<=2){
+    const max=level===1?99:999;
+    if(v===0){
+      const hundreds=level===1?0:ri(1,8),tens=ri(1,9),ones=ri(0,9);
+      const value=hundreds*100+tens*10+ones;
+      const text=level===1
+        ?`What number is <b>${tens} tens</b> and <b>${ones} ones</b>?`
+        :`What number is <b>${hundreds} hundreds</b>, <b>${tens} tens</b> and <b>${ones} ones</b>?`;
+      return makeGeneratedPracticeQ(test,difficulty,index,'place-value',text,value,'',`Build the number from its place values.`);
+    }
+    if(v===1){
+      const a=ri(level===1?10:100,max),b=ri(level===1?10:100,max),larger=Math.max(a,b);
+      return makeGeneratedPracticeQ(test,difficulty,index,'compare-number',`Which number is greater: <b>${a}</b> or <b>${b}</b>? Enter the greater number.`,larger,'',`${larger} is the greater number.`);
+    }
+    if(v===2){
+      const step=level===1?10:pick([10,100]);
+      const n=ri(level===1?10:100,max-step);
+      return makeGeneratedPracticeQ(test,difficulty,index,'more-less',`What is <b>${step}</b> more than <b>${n}</b>?`,n+step,'',`${n} + ${step} = ${n+step}`);
+    }
+    if(v===3){
+      const a=ri(level===1?20:200,max),b=ri(5,level===1?40:250);
+      return makeGeneratedPracticeQ(test,difficulty,index,'subtract-number',`Calculate <b>${a} − ${b}</b>.`,a-b,'',`${a} − ${b} = ${a-b}`);
+    }
+    const a=ri(level===1?10:100,level===1?70:700),b=ri(5,level===1?29:199);
+    return makeGeneratedPracticeQ(test,difficulty,index,'add-number',`Calculate <b>${a} + ${b}</b>.`,a+b,'',`${a} + ${b} = ${a+b}`);
+  }
+  if(v===0){
+    const a=ri(1200,9000),b=ri(300,5000);
+    return makeGeneratedPracticeQ(test,difficulty,index,'whole-add',`Calculate <b>${a} + ${b}</b>.`,a+b,'',`${a} + ${b} = ${a+b}`);
+  }
+  if(v===1){
+    const a=ri(5000,90000),b=ri(1000,Math.min(40000,a-1));
+    return makeGeneratedPracticeQ(test,difficulty,index,'whole-subtract',`Calculate <b>${a} − ${b}</b>.`,a-b,'',`${a} − ${b} = ${a-b}`);
+  }
+  if(v===2){
+    const a=ri(120,rank===3?980:480),b=ri(3,rank===3?28:9);
+    return makeGeneratedPracticeQ(test,difficulty,index,'whole-multiply',`Calculate <b>${a} × ${b}</b>.`,a*b,'',`${a} × ${b} = ${a*b}`);
+  }
+  if(v===3){
+    const b=ri(3,rank===3?16:9),ans=ri(40,rank===3?700:180),a=b*ans;
+    return makeGeneratedPracticeQ(test,difficulty,index,'whole-divide',`Calculate <b>${a} ÷ ${b}</b>.`,ans,'',`${b} × ${ans} = ${a}`);
+  }
+  const n=ri(1200,rank===3?99999:9999),place=pick([10,100,1000]);
+  const rounded=Math.round(n/place)*place;
+  return makeGeneratedPracticeQ(test,difficulty,index,'rounding',`Round <b>${n}</b> to the nearest <b>${place}</b>.`,rounded,'',`Nearest ${place}: ${rounded}`);
+}
+function genAddSubtractPracticeVariant(test,difficulty,index){
+  const level=Number(test.level||1),rank=practiceDifficultyRank(difficulty),limit=level===1?100:rank===1?1000:10000,v=index%4;
+  const a=ri(level===1?10:100,Math.floor(limit*.75));
+  const b=ri(5,Math.floor(limit*.22));
+  if(v===0)return makeGeneratedPracticeQ(test,difficulty,index,'addition',`Calculate <b>${a} + ${b}</b>.`,a+b,'',`${a} + ${b} = ${a+b}`);
+  if(v===1)return makeGeneratedPracticeQ(test,difficulty,index,'subtraction',`Calculate <b>${a+b} − ${b}</b>.`,a,'',`${a+b} − ${b} = ${a}`);
+  if(v===2)return makeGeneratedPracticeQ(test,difficulty,index,'join-story',`There are <b>${a}</b> stickers. <b>${b}</b> more are added. How many stickers altogether?`,a+b,'stickers',`${a} + ${b} = ${a+b}`);
+  return makeGeneratedPracticeQ(test,difficulty,index,'left-story',`A class has <b>${a+b}</b> pencils. <b>${b}</b> pencils are given out. How many are left?`,a,'pencils',`${a+b} − ${b} = ${a}`);
+}
+function genMultiplicationPracticeVariant(test,difficulty,index){
+  const level=Number(test.level||1),rank=practiceDifficultyRank(difficulty),v=index%4;
+  const a=ri(2,rank===3?12:level<=2?10:12),b=ri(2,rank===3?15:10);
+  if(v===0)return makeGeneratedPracticeQ(test,difficulty,index,'multiply',`Calculate <b>${a} × ${b}</b>.`,a*b,'',`${a} groups of ${b} make ${a*b}`);
+  if(v===1)return makeGeneratedPracticeQ(test,difficulty,index,'divide',`Calculate <b>${a*b} ÷ ${a}</b>.`,b,'',`${a} × ${b} = ${a*b}`);
+  if(v===2)return makeGeneratedPracticeQ(test,difficulty,index,'groups',`There are <b>${a}</b> boxes with <b>${b}</b> crayons each. How many crayons?`,a*b,'crayons',`${a} × ${b} = ${a*b}`);
+  return makeGeneratedPracticeQ(test,difficulty,index,'sharing',`<b>${a*b}</b> sweets are shared equally among <b>${a}</b> children. How many sweets each?`,b,'sweets',`${a*b} ÷ ${a} = ${b}`);
+}
+function genMoneyPracticeVariant(test,difficulty,index){
+  const level=Number(test.level||1),rank=practiceDifficultyRank(difficulty),v=index%5;
+  if(level===1){
+    if(v===0){
+      const count=ri(2,5),coin=pick([10,20,50]);
+      return makeGeneratedPracticeQ(test,difficulty,index,'coin-total',`How many cents are <b>${count}</b> ${coin===50?'fifty':coin===20?'twenty':'ten'}-cent coins?`,count*coin,'cents',`${count} × ${coin} = ${count*coin} cents`);
+    }
+    if(v===1){
+      const a=pick([10,20,30,40,50,60,70]),b=pick([10,20,30,40,50]);
+      return makeGeneratedPracticeQ(test,difficulty,index,'cents-add',`<b>${a} cents</b> + <b>${b} cents</b> = how many cents?`,a+b,'cents',`${a} + ${b} = ${a+b} cents`);
+    }
+    const cost=pick([20,30,40,50,60,70,80]),paid=100;
+    return makeGeneratedPracticeQ(test,difficulty,index,'cents-change',`A snack costs <b>${cost} cents</b>. You pay <b>$1</b>. How many cents change?`,paid-cost,'cents',`100 − ${cost} = ${paid-cost} cents`);
+  }
+  if(v===0){
+    const dollars=ri(2,rank===3?40:12),cents=pick([5,10,20,25,30,40,50,60,75,80,90]);
+    const total=dollars*100+cents;
+    return makeGeneratedPracticeQ(test,difficulty,index,'money-convert',`How many cents is <b>${moneyLabelFromCents(total)}</b>?`,total,'cents',`${moneyLabelFromCents(total)} = ${total} cents`);
+  }
+  if(v===1){
+    const price=ri(120,rank===3?1250:650),qty=ri(2,rank===3?8:5),ans=dollarsFromCents(price*qty);
+    return makeGeneratedPracticeQ(test,difficulty,index,'money-multiply',`One notebook costs <b>${moneyLabelFromCents(price)}</b>. What is the cost of <b>${qty}</b> notebooks?`,ans,'dollars',`${moneyLabelFromCents(price)} × ${qty} = ${moneyLabelFromCents(price*qty)}`,{tolerance:.01});
+  }
+  if(v===2){
+    const cost=ri(120,rank===3?3500:900),paid=Math.ceil((cost+ri(100,600))/500)*500,ans=dollarsFromCents(paid-cost);
+    return makeGeneratedPracticeQ(test,difficulty,index,'money-change',`A book costs <b>${moneyLabelFromCents(cost)}</b>. You pay <b>${moneyLabelFromCents(paid)}</b>. How much change?`,ans,'dollars',`${moneyLabelFromCents(paid)} − ${moneyLabelFromCents(cost)} = ${moneyLabelFromCents(paid-cost)}`,{tolerance:.01});
+  }
+  const a=ri(100,rank===3?3500:900),b=ri(100,rank===3?2500:700),ans=dollarsFromCents(a+b);
+  return makeGeneratedPracticeQ(test,difficulty,index,'money-add',`Calculate <b>${moneyLabelFromCents(a)} + ${moneyLabelFromCents(b)}</b>.`,ans,'dollars',`${moneyLabelFromCents(a)} + ${moneyLabelFromCents(b)} = ${moneyLabelFromCents(a+b)}`,{tolerance:.01});
+}
+function genLengthPracticeVariant(test,difficulty,index){
+  const level=Number(test.level||1),rank=practiceDifficultyRank(difficulty),v=index%5;
+  if(level<=2){
+    if(v===0){
+      const a=ri(6,rank===1?16:35),b=ri(4,rank===1?15:30);
+      return makeGeneratedPracticeQ(test,difficulty,index,'length-total',`A crayon is <b>${a} cm</b>. A marker is <b>${b} cm</b>. What is their total length?`,a+b,'cm',`${a} + ${b} = ${a+b} cm`);
+    }
+    if(v===1){
+      const a=ri(12,40),b=ri(4,a-3);
+      return makeGeneratedPracticeQ(test,difficulty,index,'length-difference',`A ribbon is <b>${a} cm</b>. A straw is <b>${b} cm</b>. How much longer is the ribbon?`,a-b,'cm',`${a} − ${b} = ${a-b} cm`);
+    }
+    if(v===2){
+      const a=ri(8,30),b=ri(3,15);
+      return makeGeneratedPracticeQ(test,difficulty,index,'length-change',`A string is <b>${a} cm</b>. Another string is <b>${b} cm</b> longer. What is its length?`,a+b,'cm',`${a} + ${b} = ${a+b} cm`);
+    }
+    if(v===3&&level>=2){
+      const a=ri(2,8),b=ri(1,7);
+      return makeGeneratedPracticeQ(test,difficulty,index,'metre-total',`A rope is <b>${a} m</b> long. Another rope is <b>${b} m</b> long. What is the total length?`,a+b,'m',`${a} + ${b} = ${a+b} m`);
+    }
+    const whole=ri(2,8),cut=ri(25,95),ans=whole*100-cut;
+    return makeGeneratedPracticeQ(test,difficulty,index,'length-cut',`A plank is <b>${whole} m</b>. <b>${cut} cm</b> is cut off. How many centimetres remain?`,ans,'cm',`${whole} m = ${whole*100} cm, and ${whole*100} − ${cut} = ${ans}`);
+  }
+  if(v===0){
+    const m=ri(1,5),cm=ri(20,95),first=m*100+cm,other=ri(30,160),ans=first+other;
+    return makeGeneratedPracticeQ(test,difficulty,index,'compound-length-total',`A rope is <b>${first} cm</b>. Another rope is <b>${other} cm</b>. What is their total length?`,ans,'cm',`${first} + ${other} = ${ans} cm`);
+  }
+  if(v===1){
+    const a=ri(250,850),b=ri(80,a-50);
+    return makeGeneratedPracticeQ(test,difficulty,index,'compound-length-difference',`A ribbon is <b>${a} cm</b>. A string is <b>${b} cm</b>. What is the difference in length?`,a-b,'cm',`${a} − ${b} = ${a-b} cm`);
+  }
+  if(v===2){
+    const km=ri(2,9),m=ri(20,950),ans=km*1000+m;
+    return makeGeneratedPracticeQ(test,difficulty,index,'km-convert',`Convert <b>${km} km ${m} m</b> to metres.`,ans,'m',`${km} km = ${km*1000} m, plus ${m} m`);
+  }
+  const a=Number((ri(12,45)/10).toFixed(1)),b=ri(40,180),ans=Math.round(a*100+b);
+  return makeGeneratedPracticeQ(test,difficulty,index,'metre-cm-total',`Two strings are <b>${a} m</b> and <b>${b} cm</b>. What is their total in centimetres?`,ans,'cm',`${a} m = ${Math.round(a*100)} cm, then add ${b} cm`);
+}
+function genMassPracticeVariant(test,difficulty,index){
+  const rank=practiceDifficultyRank(difficulty),v=index%4;
+  if(v===0){
+    const kg=rank===1?ri(1,5):Number((ri(12,95)/10).toFixed(1));
+    return makeGeneratedPracticeQ(test,difficulty,index,'mass-convert',`Convert <b>${kg} kg</b> to grams.`,Math.round(kg*1000),'g',`${kg} × 1000 = ${Math.round(kg*1000)} g`);
+  }
+  if(v===1){
+    const a=ri(300,2500),b=ri(200,2000);
+    return makeGeneratedPracticeQ(test,difficulty,index,'mass-total',`A melon is <b>${a} g</b> and a papaya is <b>${b} g</b>. What is their total mass?`,a+b,'g',`${a} + ${b} = ${a+b} g`);
+  }
+  if(v===2){
+    const kg=ri(1,6),g=ri(200,kg*1000+800),aG=kg*1000,bG=g,ans=aG>=bG?'A':'B';
+    return makeGeneratedPracticeQ(test,difficulty,index,'mass-compare','Which mass is heavier?',ans,'',`${kg} kg = ${aG} g, compared with ${bG} g`,{
+      type:'compare',
+      optA:{label:`${kg} kg`,emoji:'📦'},
+      optB:{label:`${g} g`,emoji:'📦'},
+      tip:'Convert to the same unit first.'
+    });
+  }
+  const kg=ri(1,6),g=ri(50,950),ans=kg*1000+g;
+  return makeGeneratedPracticeQ(test,difficulty,index,'compound-mass',`A bag is <b>${kg} kg ${g} g</b>. How many grams is that?`,ans,'g',`${kg} kg = ${kg*1000} g, plus ${g} g`);
+}
+function genVolumePracticeVariant(test,difficulty,index){
+  const level=Number(test.level||1),rank=practiceDifficultyRank(difficulty),v=index%5;
+  if(level<=2){
+    if(v===0){
+      const a=ri(1,9),b=ri(1,8);
+      return makeGeneratedPracticeQ(test,difficulty,index,'litre-total',`A jug has <b>${a} ℓ</b>. Another jug has <b>${b} ℓ</b>. How many litres altogether?`,a+b,'ℓ',`${a} + ${b} = ${a+b} ℓ`);
+    }
+    if(v===1){
+      const l=ri(1,8);
+      return makeGeneratedPracticeQ(test,difficulty,index,'litre-convert',`Convert <b>${l} ℓ</b> to millilitres.`,l*1000,'ml',`${l} × 1000 = ${l*1000} ml`);
+    }
+    const a=pick([250,500,750,1000,1250,1500]),b=pick([250,500,750]);
+    return makeGeneratedPracticeQ(test,difficulty,index,'ml-total',`A bottle has <b>${a} ml</b>. Another has <b>${b} ml</b>. How much altogether?`,a+b,'ml',`${a} + ${b} = ${a+b} ml`);
+  }
+  if(v===0){
+    const l=ri(4,12),b=ri(3,10),h=ri(2,8),ans=l*b*h;
+    return makeGeneratedPracticeQ(test,difficulty,index,'cuboid-volume',`Find the volume of a cuboid <b>${l} cm × ${b} cm × ${h} cm</b>.`,ans,'cm³',`${l} × ${b} × ${h} = ${ans} cm³`);
+  }
+  if(v===1){
+    const side=ri(3,9),ans=side*side*side;
+    return makeGeneratedPracticeQ(test,difficulty,index,'cube-volume',`A cube has side <b>${side} cm</b>. Find its volume.`,ans,'cm³',`${side} × ${side} × ${side} = ${ans}`);
+  }
+  if(v===2){
+    const l=ri(8,20),b=ri(4,12),h=ri(3,10),vol=l*b*h;
+    return makeGeneratedPracticeQ(test,difficulty,index,'missing-height',`A cuboid has volume <b>${vol} cm³</b>, length <b>${l} cm</b> and breadth <b>${b} cm</b>. Find its height.`,h,'cm',`${vol} ÷ (${l} × ${b}) = ${h}`);
+  }
+  const litres=ri(3,24);
+  return makeGeneratedPracticeQ(test,difficulty,index,'cm3-litres',`A tank has volume <b>${litres*1000} cm³</b>. How many litres is that?`,litres,'ℓ',`${litres*1000} cm³ = ${litres} ℓ`);
+}
+function genTimePracticeVariant(test,difficulty,index){
+  const rank=practiceDifficultyRank(difficulty),v=index%4;
+  if(v===0){
+    const start=ri(1,10),add=ri(1,rank===1?3:6),ans=((start+add-1)%12)+1;
+    return makeGeneratedPracticeQ(test,difficulty,index,'time-after',`What time is <b>${add} hours after ${start}:00</b>? Enter the hour only.`,ans,'',`${start}:00 plus ${add} hours is ${ans}:00`);
+  }
+  if(v===1){
+    const start=ri(2,12),sub=ri(1,Math.min(5,start-1)),ans=start-sub;
+    return makeGeneratedPracticeQ(test,difficulty,index,'time-before',`What time is <b>${sub} hour${sub>1?'s':''} before ${start}:00</b>? Enter the hour only.`,ans,'',`${start}:00 minus ${sub} hour${sub>1?'s':''} is ${ans}:00`);
+  }
+  if(v===2){
+    const h=ri(1,3),m=pick([10,15,20,25,30,35,40,45,50]);
+    return makeGeneratedPracticeQ(test,difficulty,index,'hours-minutes',`Convert <b>${h} h ${m} min</b> to minutes.`,h*60+m,'min',`${h} h = ${h*60} min, plus ${m} min`);
+  }
+  const startH=ri(7,10),startM=pick([0,5,10,15,20,25,30]),dur=pick([25,30,35,40,45,50]);
+  const total=startM+dur,endH=startH+Math.floor(total/60),endM=total%60;
+  return makeGeneratedPracticeQ(test,difficulty,index,'duration',`A lesson starts at <b>${startH}:${String(startM).padStart(2,'0')} am</b> and ends at <b>${endH}:${String(endM).padStart(2,'0')} am</b>. How many minutes?`,dur,'min',`Count from ${startH}:${String(startM).padStart(2,'0')} to ${endH}:${String(endM).padStart(2,'0')}: ${dur} minutes`);
+}
+function genFractionPracticeVariant(test,difficulty,index){
+  const level=Number(test.level||1),rank=practiceDifficultyRank(difficulty),v=index%5;
+  if(level<=3){
+    const den=pick([4,5,6,8,9,10,12]),a=ri(1,Math.floor(den/2)),b=ri(1,den-a-1);
+    if(v===0)return makeGeneratedPracticeQ(test,difficulty,index,'like-fraction-add',`<b>${a}/${den} + ${b}/${den}</b> = ?/${den}. Enter the missing numerator.`,a+b,'',`${a} + ${b} = ${a+b}`);
+    if(v===1)return makeGeneratedPracticeQ(test,difficulty,index,'like-fraction-subtract',`<b>${a+b}/${den} − ${b}/${den}</b> = ?/${den}. Enter the missing numerator.`,a,'',`${a+b} − ${b} = ${a}`);
+    const factor=pick([2,3,4]),newDen=den*factor;
+    return makeGeneratedPracticeQ(test,difficulty,index,'equivalent-fraction',`<b>${a}/${den} = ?/${newDen}</b>. Enter the missing numerator.`,a*factor,'',`Multiply top and bottom by ${factor}`);
+  }
+  if(v===0){
+    const den=pick([6,8,10,12]),a=ri(2,den-1),b=ri(1,a-1);
+    return makeGeneratedPracticeQ(test,difficulty,index,'fraction-of',`<b>${b}/${den}</b> of <b>${den*rank*10}</b> is what?`,b*rank*10,'',`${den*rank*10} ÷ ${den} × ${b} = ${b*rank*10}`);
+  }
+  if(v===1)return makeGeneratedPracticeQ(test,difficulty,index,'unlike-fraction',`<b>1/2 + 1/4</b> = ?/4. Enter the missing numerator.`,3,'','1/2 = 2/4, so 2/4 + 1/4 = 3/4');
+  const den=pick([4,5,8,10]),num=ri(1,den-1),whole=ri(1,4);
+  return makeGeneratedPracticeQ(test,difficulty,index,'mixed-improper',`Convert <b>${whole} ${num}/${den}</b> to an improper fraction with denominator ${den}. Enter the numerator.`,whole*den+num,'',`${whole} × ${den} + ${num} = ${whole*den+num}`);
+}
+function genDecimalPracticeVariant(test,difficulty,index){
+  const rank=practiceDifficultyRank(difficulty),v=index%5;
+  if(v===0){
+    const a=Number((ri(120,950)/100).toFixed(2)),b=Number((ri(20,480)/100).toFixed(2)),ans=Number((a+b).toFixed(2));
+    return makeGeneratedPracticeQ(test,difficulty,index,'decimal-add',`Calculate <b>${a} + ${b}</b>.`,ans,'',`${a} + ${b} = ${ans}`,{tolerance:.01});
+  }
+  if(v===1){
+    const a=Number((ri(400,990)/100).toFixed(2)),b=Number((ri(20,Math.floor(a*100)-10)/100).toFixed(2)),ans=Number((a-b).toFixed(2));
+    return makeGeneratedPracticeQ(test,difficulty,index,'decimal-subtract',`Calculate <b>${a} − ${b}</b>.`,ans,'',`${a} − ${b} = ${ans}`,{tolerance:.01});
+  }
+  if(v===2){
+    const a=Number((ri(12,99)/10).toFixed(1)),b=ri(2,rank===3?9:5),ans=Number((a*b).toFixed(1));
+    return makeGeneratedPracticeQ(test,difficulty,index,'decimal-multiply',`Calculate <b>${a} × ${b}</b>.`,ans,'',`${a} × ${b} = ${ans}`,{tolerance:.01});
+  }
+  const n=Number((ri(100,999)/100).toFixed(2));
+  return makeGeneratedPracticeQ(test,difficulty,index,'decimal-percent',`Convert <b>${n}</b> to a percentage.`,Number((n*100).toFixed(0)),'%',`${n} × 100% = ${Number((n*100).toFixed(0))}%`);
+}
+function genPercentagePracticeVariant(test,difficulty,index){
+  const v=index%4;
+  if(v===0){
+    const pct=pick([10,20,25,30,40,50,75]),base=ri(4,20)*10,ans=base*pct/100;
+    return makeGeneratedPracticeQ(test,difficulty,index,'percent-of',`Find <b>${pct}%</b> of <b>${base}</b>.`,ans,'',`${pct}/100 × ${base} = ${ans}`);
+  }
+  if(v===1){
+    const price=ri(5,30)*10,pct=pick([10,15,20,25,30]),ans=price-price*pct/100;
+    return makeGeneratedPracticeQ(test,difficulty,index,'discount',`A $${price} item has a <b>${pct}%</b> discount. What is the sale price?`,ans,'dollars',`${pct}% of ${price} is ${price*pct/100}; sale price = ${ans}`);
+  }
+  if(v===2){
+    const original=ri(4,20)*10,inc=pick([10,20,25,50]),newValue=original*(100+inc)/100;
+    return makeGeneratedPracticeQ(test,difficulty,index,'percentage-increase',`A number increases by <b>${inc}%</b> to become <b>${newValue}</b>. What was the original number?`,original,'',`${100+inc}% is ${newValue}, so 100% is ${original}`);
+  }
+  const a=ri(5,20)*10,pct=pick([10,20,25,30,40,50]),b=a*(100+pct)/100;
+  return makeGeneratedPracticeQ(test,difficulty,index,'percentage-change',`A value increases from <b>${a}</b> to <b>${b}</b>. What is the percentage increase?`,pct,'%',`Increase = ${b-a}; ${b-a}/${a} × 100% = ${pct}%`);
+}
+function genAreaPracticeVariant(test,difficulty,index){
+  const triangle=String(test.id||'').includes('triangles'),v=index%4;
+  if(triangle){
+    const base=ri(6,24),height=ri(4,16),area=base*height/2;
+    if(v===0)return makeGeneratedPracticeQ(test,difficulty,index,'triangle-area',`Find the area of a triangle with base <b>${base} cm</b> and height <b>${height} cm</b>.`,area,'cm²',`1/2 × ${base} × ${height} = ${area}`);
+    return makeGeneratedPracticeQ(test,difficulty,index,'triangle-height',`A triangle has area <b>${area} cm²</b> and base <b>${base} cm</b>. Find its height.`,height,'cm',`${area} = 1/2 × ${base} × height`);
+  }
+  const l=ri(5,20),b=ri(3,14);
+  if(v===0)return makeGeneratedPracticeQ(test,difficulty,index,'rectangle-area',`Find the area of a rectangle <b>${l} cm</b> by <b>${b} cm</b>.`,l*b,'cm²',`${l} × ${b} = ${l*b} cm²`);
+  if(v===1)return makeGeneratedPracticeQ(test,difficulty,index,'rectangle-perimeter',`Find the perimeter of a rectangle <b>${l} cm</b> by <b>${b} cm</b>.`,2*(l+b),'cm',`${l} + ${b} + ${l} + ${b} = ${2*(l+b)} cm`);
+  if(v===2){
+    const side=ri(4,15);
+    return makeGeneratedPracticeQ(test,difficulty,index,'square-perimeter',`A square has side <b>${side} cm</b>. Find its perimeter.`,side*4,'cm',`4 × ${side} = ${side*4}`);
+  }
+  const area=l*b;
+  return makeGeneratedPracticeQ(test,difficulty,index,'missing-breadth',`A rectangle has area <b>${area} cm²</b> and length <b>${l} cm</b>. Find its breadth.`,b,'cm',`${area} ÷ ${l} = ${b}`);
+}
+function genAnglePracticeVariant(test,difficulty,index){
+  const v=index%5;
+  if(v===0){
+    const a=ri(25,150);
+    return makeGeneratedPracticeQ(test,difficulty,index,'straight-line-angle',`Two angles on a straight line are <b>${a}°</b> and <b>x°</b>. Find <b>x</b>.`,180-a,'°',`180 − ${a} = ${180-a}`);
+  }
+  if(v===1){
+    const a=ri(40,110),b=ri(40,110),x=180-a-b;
+    if(x>0)return makeGeneratedPracticeQ(test,difficulty,index,'triangle-angle',`A triangle has angles <b>${a}°</b>, <b>${b}°</b> and <b>x°</b>. Find <b>x</b>.`,x,'°',`180 − ${a} − ${b} = ${x}`);
+  }
+  if(v===2){
+    const vtx=ri(30,100),base=(180-vtx)/2;
+    return makeGeneratedPracticeQ(test,difficulty,index,'isosceles-base',`An isosceles triangle has vertex angle <b>${vtx}°</b>. Find each base angle.`,base,'°',`(180 − ${vtx}) ÷ 2 = ${base}`);
+  }
+  if(v===3)return makeGeneratedPracticeQ(test,difficulty,index,'right-angle',`A right angle is how many degrees?`,90,'°','A right angle is 90°');
+  return makeGeneratedPracticeQ(test,difficulty,index,'rectangle-right-angles',`How many right angles are in a rectangle?`,4,'right angles','A rectangle has 4 right angles');
+}
+function genShapePracticeVariant(test,difficulty,index){
+  const id=String(test.id||''),v=index%6;
+  if(id.includes('symmetry')){
+    const shapes=[['square',4],['rectangle',2],['equilateral triangle',3],['regular pentagon',5],['regular hexagon',6],['regular octagon',8]];
+    const [shape,lines]=pick(shapes);
+    return makeGeneratedPracticeQ(test,difficulty,index,'symmetry',`How many lines of symmetry does a <b>${shape}</b> have?`,lines,'lines',`A ${shape} has ${lines} line${lines===1?'':'s'} of symmetry.`);
+  }
+  if(id.includes('nets_solids')){
+    const rows=[
+      ['cube','faces',6],['cube','edges',12],['cuboid','vertices',8],['cuboid','faces',6],['triangular prism','triangular faces',2]
+    ];
+    const [solid,property,answer]=pick(rows);
+    return makeGeneratedPracticeQ(test,difficulty,index,'solid-property',`How many ${property} does a <b>${solid}</b> have?`,answer,property.includes('faces')?'faces':property,`A ${solid} has ${answer} ${property}.`);
+  }
+  if(v===0)return makeGeneratedPracticeQ(test,difficulty,index,'triangle-sides',`How many sides does a <b>triangle</b> have?`,3,'sides','A triangle has 3 sides');
+  if(v===1)return makeGeneratedPracticeQ(test,difficulty,index,'rectangle-corners',`How many corners does a <b>rectangle</b> have?`,4,'corners','A rectangle has 4 corners');
+  if(v===2)return makeGeneratedPracticeQ(test,difficulty,index,'cube-faces',`How many faces does a <b>cube</b> have?`,6,'faces','A cube has 6 faces');
+  if(v===3)return makeGeneratedPracticeQ(test,difficulty,index,'cuboid-edges',`How many edges does a <b>cuboid</b> have?`,12,'edges','A cuboid has 12 edges');
+  if(v===4)return makeGeneratedPracticeQ(test,difficulty,index,'shape-compare','Which shape has <span class="highlight">4 equal sides</span>?','A','',"A square has 4 equal sides.",{
+    type:'compare',
+    optA:{label:'Square',emoji:'□'},
+    optB:{label:'Rectangle',emoji:'▭'},
+    tip:'Look for equal side lengths.'
+  });
+  return makeGeneratedPracticeQ(test,difficulty,index,'solid-compare','Which solid can roll smoothly?','A','',"A sphere can roll smoothly.",{
+    type:'compare',
+    optA:{label:'Sphere',emoji:'⚽'},
+    optB:{label:'Cube',emoji:'🧊'},
+    tip:'Look for a curved surface.'
+  });
+}
+function genDataPracticeVariant(test,difficulty,index){
+  const id=String(test.id||''),v=index%5;
+  if(id.includes('average')){
+    const values=[ri(6,20),ri(8,24),ri(10,28),ri(12,32)],sum=values.reduce((a,b)=>a+b,0),avg=Number((sum/values.length).toFixed(2));
+    if(v===0)return makeGeneratedPracticeQ(test,difficulty,index,'average',`Find the average of <b>${values.join('</b>, <b>')}</b>.`,avg,'',`Total = ${sum}, and ${sum} ÷ ${values.length} = ${avg}`,{tolerance:.01});
+    const count=ri(3,6),average=ri(10,25);
+    return makeGeneratedPracticeQ(test,difficulty,index,'average-total',`The average of <b>${count}</b> numbers is <b>${average}</b>. What is their total?`,count*average,'',`Total = average × number of values = ${average} × ${count}`);
+  }
+  if(id.includes('picture_graphs')){
+    const count=ri(3,10),each=pick([1,2,3,4,5,10]),item=pick(['stars','books','fish','apple pictures','symbols']);
+    return makeGeneratedPracticeQ(test,difficulty,index,'picture-graph',`A picture graph shows <b>${count}</b> ${item}. Each ${item.includes('pictures')?'picture':'symbol'} means <b>${each}</b>. What is the value?`,count*each,'',`${count} × ${each} = ${count*each}`);
+  }
+  if(v===0){
+    const scale=pick([2,4,5,10]),marks=ri(4,12);
+    return makeGeneratedPracticeQ(test,difficulty,index,'bar-scale',`A bar graph scale goes by <b>${scale}</b>. A bar reaches the ${marks}th mark. What value does it show?`,scale*marks,'',`${marks} × ${scale} = ${scale*marks}`);
+  }
+  if(v===1){
+    const a=ri(12,45),b=ri(8,44),c=ri(5,40);
+    return makeGeneratedPracticeQ(test,difficulty,index,'data-total',`A table shows <b>${a}</b>, <b>${b}</b> and <b>${c}</b>. What is the total?`,a+b+c,'',`${a} + ${b} + ${c} = ${a+b+c}`);
+  }
+  const angle=pick([45,60,72,90,120,180]);
+  return makeGeneratedPracticeQ(test,difficulty,index,'pie-percent',`A pie chart angle is <b>${angle}°</b>. What percentage of the whole chart is it?`,angle/360*100,'%',`${angle}/360 × 100% = ${angle/360*100}%`,{tolerance:.01});
+}
+function genFactorsPracticeVariant(test,difficulty,index){
+  const v=index%4;
+  if(v===0){
+    const pairs=[[12,18,6],[18,30,6],[24,36,12],[28,42,14],[32,48,16]],p=pick(pairs);
+    return makeGeneratedPracticeQ(test,difficulty,index,'gcf',`What is the greatest common factor of <b>${p[0]}</b> and <b>${p[1]}</b>?`,p[2],'',`The greatest common factor is ${p[2]}`);
+  }
+  if(v===1){
+    const pairs=[[4,6,12],[5,8,40],[6,9,18],[8,12,24],[9,12,36]],p=pick(pairs);
+    return makeGeneratedPracticeQ(test,difficulty,index,'lcm',`What is the lowest common multiple of <b>${p[0]}</b> and <b>${p[1]}</b>?`,p[2],'',`The lowest common multiple is ${p[2]}`);
+  }
+  const n=pick([12,16,18,20,24,30,36]),factors=Array.from({length:n},(_,i)=>i+1).filter(x=>n%x===0).length;
+  return makeGeneratedPracticeQ(test,difficulty,index,'factor-count',`How many factors does <b>${n}</b> have?`,factors,'factors',`${n} has ${factors} factors.`);
+}
+function genRatioPracticeVariant(test,difficulty,index){
+  const v=index%4,a=ri(2,7),b=ri(3,9),part=ri(4,12),total=(a+b)*part;
+  if(v===0)return makeGeneratedPracticeQ(test,difficulty,index,'ratio-total',`The ratio of red to blue beads is <b>${a} : ${b}</b>. There are <b>${total}</b> beads. How many blue beads?`,b*part,'beads',`${a+b} parts = ${total}, so 1 part = ${part}`);
+  if(v===1)return makeGeneratedPracticeQ(test,difficulty,index,'ratio-equivalent',`<b>${a} : ${b} = ${a*part} : x</b>. Find <b>x</b>.`,b*part,'',`${a} is multiplied by ${part}, so ${b} × ${part} = ${b*part}`);
+  const diffParts=Math.abs(b-a)||1,diff=diffParts*part,small=Math.min(a,b)*part;
+  return makeGeneratedPracticeQ(test,difficulty,index,'ratio-difference',`Two shares are in the ratio <b>${a} : ${b}</b>. Their difference is <b>${diff}</b>. Find the smaller share.`,small,'',`${diffParts} parts = ${diff}, so 1 part = ${part}`);
+}
+function genRateSpeedPracticeVariant(test,difficulty,index){
+  const id=String(test.id||''),v=index%4;
+  if(id.includes('speed')){
+    const speed=pick([12,15,18,24,30,45,60,75,80]),time=pick([2,3,4,5]);
+    if(v===0)return makeGeneratedPracticeQ(test,difficulty,index,'speed-distance',`A cyclist travels at <b>${speed} km/h</b> for <b>${time} h</b>. Find the distance.`,speed*time,'km',`${speed} × ${time} = ${speed*time}`);
+    if(v===1)return makeGeneratedPracticeQ(test,difficulty,index,'speed-rate',`A car travels <b>${speed*time} km</b> in <b>${time} h</b>. Find its speed.`,speed,'km/h',`${speed*time} ÷ ${time} = ${speed}`);
+    return makeGeneratedPracticeQ(test,difficulty,index,'speed-time',`A train travels <b>${speed*time} km</b> at <b>${speed} km/h</b>. How many hours does it take?`,time,'h',`${speed*time} ÷ ${speed} = ${time}`);
+  }
+  const rate=ri(3,15),mins=ri(3,12),total=rate*mins;
+  if(v===0)return makeGeneratedPracticeQ(test,difficulty,index,'rate-total',`A printer prints at <b>${rate} pages/min</b>. How many pages in <b>${mins} min</b>?`,total,'pages',`${rate} × ${mins} = ${total}`);
+  return makeGeneratedPracticeQ(test,difficulty,index,'rate-find',`A machine packs <b>${total}</b> boxes in <b>${mins} min</b>. What is the rate?`,rate,'boxes/min',`${total} ÷ ${mins} = ${rate}`);
+}
+function genAlgebraPracticeVariant(test,difficulty,index){
+  const v=index%4;
+  if(v===0){
+    const a=ri(2,8),x=ri(3,12),b=ri(1,15),ans=a*x+b;
+    return makeGeneratedPracticeQ(test,difficulty,index,'evaluate-expression',`Evaluate <b>${a}a + ${b}</b> when <b>a = ${x}</b>.`,ans,'',`${a}×${x} + ${b} = ${ans}`);
+  }
+  const m=ri(2,8),x=ri(3,12),c=ri(2,20),rhs=m*x+c;
+  return makeGeneratedPracticeQ(test,difficulty,index,'solve-equation',`Solve <b>${m}x + ${c} = ${rhs}</b>. Find <b>x</b>.`,x,'',`${m}x = ${rhs-c}, so x = ${x}`);
+}
+function genCirclePracticeVariant(test,difficulty,index){
+  const v=index%4,r=pick([7,14,21,28]);
+  if(v===0)return makeGeneratedPracticeQ(test,difficulty,index,'circle-circumference-radius',`Using π = 22/7, find the circumference of a circle with radius <b>${r} cm</b>.`,2*22/7*r,'cm',`2 × 22/7 × ${r} = ${2*22/7*r}`);
+  if(v===1)return makeGeneratedPracticeQ(test,difficulty,index,'circle-area',`Using π = 22/7, find the area of a circle with radius <b>${r} cm</b>.`,22/7*r*r,'cm²',`22/7 × ${r} × ${r} = ${22/7*r*r}`);
+  const d=r*2;
+  return makeGeneratedPracticeQ(test,difficulty,index,'circle-radius',`Find the radius of a circle with diameter <b>${d} cm</b>.`,r,'cm','Radius is half the diameter');
+}
+function genLengthMassVolumePracticeVariant(test,difficulty,index){
+  const choice=index%3;
+  if(choice===0)return genLengthPracticeVariant(test,difficulty,index);
+  if(choice===1)return genMassPracticeVariant(test,difficulty,index);
+  return genVolumePracticeVariant(test,difficulty,index);
+}
+function generatePracticeVariant(test,difficulty,index){
+  const id=String(test.id||'');
+  if(id.includes('length_mass_volume'))return genLengthMassVolumePracticeVariant(test,difficulty,index);
+  if(id.includes('add_subtract'))return genAddSubtractPracticeVariant(test,difficulty,index);
+  if(id.includes('multiplication_division'))return genMultiplicationPracticeVariant(test,difficulty,index);
+  if(id.includes('numbers')||id.includes('whole_numbers'))return genNumberPracticeVariant(test,difficulty,index);
+  if(id.includes('money'))return genMoneyPracticeVariant(test,difficulty,index);
+  if(id.includes('length'))return genLengthPracticeVariant(test,difficulty,index);
+  if(id.includes('mass'))return genMassPracticeVariant(test,difficulty,index);
+  if(id.includes('volume'))return genVolumePracticeVariant(test,difficulty,index);
+  if(id.includes('time'))return genTimePracticeVariant(test,difficulty,index);
+  if(id.includes('fractions'))return genFractionPracticeVariant(test,difficulty,index);
+  if(id.includes('decimals_percent'))return index%2?genDecimalPracticeVariant(test,difficulty,index):genPercentagePracticeVariant(test,difficulty,index);
+  if(id.includes('decimals'))return genDecimalPracticeVariant(test,difficulty,index);
+  if(id.includes('percentage'))return genPercentagePracticeVariant(test,difficulty,index);
+  if(id.includes('area_perimeter')||id.includes('area_triangles'))return genAreaPracticeVariant(test,difficulty,index);
+  if(id.includes('angles')||id.includes('angles_lines'))return genAnglePracticeVariant(test,difficulty,index);
+  if(id.includes('factors_multiples'))return genFactorsPracticeVariant(test,difficulty,index);
+  if(id.includes('symmetry')||id.includes('nets_solids')||id.includes('shapes')||id.includes('geometry'))return genShapePracticeVariant(test,difficulty,index);
+  if(id.includes('picture_graphs')||id.includes('bar_graphs')||id.includes('data')||id.includes('average'))return genDataPracticeVariant(test,difficulty,index);
+  if(id.includes('ratio'))return genRatioPracticeVariant(test,difficulty,index);
+  if(id.includes('rate')||id.includes('speed'))return genRateSpeedPracticeVariant(test,difficulty,index);
+  if(id.includes('algebra'))return genAlgebraPracticeVariant(test,difficulty,index);
+  if(id.includes('circles'))return genCirclePracticeVariant(test,difficulty,index);
+  return genNumberPracticeVariant(test,difficulty,index);
+}
+function practiceGeneratedQuestionsForTest(test,difficulty,count=18){
+  return Array.from({length:count},(_,index)=>generatePracticeVariant(test,difficulty,index)).filter(Boolean);
+}
 function practiceQuestionPool(){
   const p=APP.practice;
   p.mode=normalizePracticeMode(p.level,p.mode);
@@ -1184,19 +1646,25 @@ function practiceQuestionPool(){
   const tests=p.mode==='mix'
     ?testsForPracticeLevel(p.level)
     :TESTS.filter(t=>t.id===p.mode);
+  const generatedCount=p.mode==='mix'?12:30;
+  const generated=tests.flatMap(t=>practiceGeneratedQuestionsForTest(t,p.difficulty,generatedCount));
   const rows=tests.flatMap(t=>{
     const questions=t.questions||[];
     return questions
       .map((q,index)=>({...q,practiceTopic:t.name,practiceDifficulty:p.difficulty,practiceIndex:index}))
       .filter(q=>matchesPracticeDifficulty(q.practiceIndex,questions.length,p.difficulty));
   });
-  return rows.length?rows:tests.flatMap(t=>(t.questions||[]).map((q,index)=>({
+  if(rows.length||generated.length)return [...rows,...generated];
+  return tests.flatMap(t=>(t.questions||[]).map((q,index)=>({
     ...q,practiceTopic:t.name,practiceDifficulty:p.difficulty,practiceIndex:index
   })));
 }
 function genPracticeQuestion(){
   const pool=practiceQuestionPool();
-  const q=JSON.parse(JSON.stringify(pick(pool.length?pool:TESTS.flatMap(t=>t.questions))));
+  const source=pool.length?pool:TESTS.flatMap(t=>t.questions);
+  const recent=new Set((APP.practice.history||[]).slice(-14).map(x=>stripQuestionHtml(x.q?.text||'')));
+  const fresh=source.filter(q=>!recent.has(stripQuestionHtml(q.text||'')));
+  const q=JSON.parse(JSON.stringify(pick(fresh.length?fresh:source)));
   q.practiceTopic=q.practiceTopic||'Practice';
   q.practiceDifficulty=normalizePracticeDifficulty(q.practiceDifficulty||APP.practice.difficulty);
   q.visual=inferPracticeVisual(q);
@@ -1276,6 +1744,42 @@ function parseRatioVisual(text){
   if(left>10||right>10)return null;
   return{left,right};
 }
+function parseLengthToCm(value,unit){
+  const n=Number(value);
+  const u=String(unit||'').toLowerCase();
+  if(!Number.isFinite(n))return null;
+  const isMetre=/^(m|metres?|meters?)$/.test(u);
+  const cleanUnit=isMetre?'m':'cm';
+  return{value:n,unit:cleanUnit,cm:isMetre?n*100:n,label:`${n} ${cleanUnit}`};
+}
+function parseLengthVisual(text,answerUnit=''){
+  const raw=stripQuestionHtml(text);
+  const plain=raw.toLowerCase();
+  if(/\b(area|perimeter|convert|metres and centimetres|meters and centimeters|beyond)\b/i.test(plain))return null;
+  const lengths=[...raw.matchAll(/(\d+(?:\.\d+)?)\s*(cm|centimetres?|centimeters?|m|metres?|meters?)\b/gi)]
+    .map(m=>parseLengthToCm(m[1],m[2]))
+    .filter(Boolean);
+  if(lengths.length<2)return null;
+
+  const asksTotal=/\b(total|altogether|combined|both|their total)\b/i.test(plain);
+  const asksDifference=/\b(how much longer|how much shorter|difference|cut off|were cut|remain|left|other piece)\b/i.test(plain);
+  const asksChangedLength=/\b(longer|shorter)\b/i.test(plain)&&!asksDifference;
+  if(!asksTotal&&!asksDifference&&!asksChangedLength)return null;
+
+  const operation=/\bshorter|cut off|were cut|remain|left|other piece\b/i.test(plain)?'minus':'plus';
+  const mode=asksTotal?'total':asksDifference?'difference':'change';
+  const unit=answerUnit||(/^(m|metres?|meters?)$/i.test(lengths[0].unit)&&/^(m|metres?|meters?)$/i.test(lengths[1].unit)?'m':'cm');
+  return{
+    type:'length-model',
+    title:mode==='total'
+      ?'Put the two lengths together'
+      :mode==='difference'
+        ?'Compare the two lengths'
+        :'Start length and change',
+    mode,operation,unit,
+    lengths:lengths.slice(0,2)
+  };
+}
 function inferPracticeVisual(q){
   const plain=stripQuestionHtml(q.text).toLowerCase();
   const unit=String(q.unit||'').toLowerCase();
@@ -1307,11 +1811,8 @@ function inferPracticeVisual(q){
   if(hasWord(plain,'angle')||hasWord(plain,'angles')||unit==='°')return{type:'angle',title:'Angles measure a turn'};
   if(hasWord(plain,'cube')&&!hasWord(plain,'cuboid'))return{type:'cube',title:'A cube has equal edges'};
   if(hasWord(plain,'volume')||unit.includes('cm³')||hasWord(plain,'cuboid')||hasWord(plain,'tank'))return{type:'cuboid',title:'Volume fills a 3D space'};
-  if(!hasWord(plain,'area')&&!hasWord(plain,'perimeter')&&(
-    hasWord(plain,'ribbon')||hasWord(plain,'rope')||hasWord(plain,'pencil')||
-    hasWord(plain,'straw')||hasWord(plain,'plank')||hasWord(plain,'line')||
-    hasWord(plain,'length')||hasWord(plain,'longer')||hasWord(plain,'shorter')
-  ))return{type:'ruler',title:'Use a ruler to compare lengths'};
+  const length=parseLengthVisual(q.text,q.unit);
+  if(length)return length;
   return null;
 }
 function renderQuestionVisual(q){
@@ -1339,6 +1840,44 @@ function renderQuestionVisual(q){
     <div class="visual-card">${title}
       <div class="visual-ruler">${Array.from({length:13},(_,i)=>`<div class="visual-tick ${i%5===0?'big':i%2===0?'mid':'small'}"></div>`).join('')}</div>
     </div>`;
+  if(v.type==='length-model'){
+    const [a,b]=v.lengths||[];
+    if(!a||!b)return '';
+    const max=Math.max(a.cm,b.cm,1);
+    const ruler=x=>{
+      const w=Math.max(86,Math.min(245,Math.round(72+(x.cm/max)*150)));
+      return`<div class="length-ruler" style="width:${w}px"><span>${escapeHtml(x.label)}</span></div>`;
+    };
+    if(v.mode==='total')return `
+      <div class="visual-card">${title}
+        <div class="length-model">
+          <div class="length-row">
+            ${ruler(a)}<div class="length-op">+</div>${ruler(b)}
+            <div class="length-op">=</div><div class="length-question">? ${escapeHtml(v.unit||q.unit||'cm')}</div>
+          </div>
+        </div>
+      </div>`;
+    if(v.mode==='change')return `
+      <div class="visual-card">${title}
+        <div class="length-model">
+          <div class="length-row">
+            ${ruler(a)}<div class="length-op">${v.operation==='minus'?'−':'+'}</div>${ruler(b)}
+            <div class="length-op">=</div><div class="length-question">? ${escapeHtml(v.unit||q.unit||'cm')}</div>
+          </div>
+          <div class="length-note">${v.operation==='minus'?'Take away the changed length':'Add the extra length'}</div>
+        </div>
+      </div>`;
+    return `
+      <div class="visual-card">${title}
+        <div class="length-model">
+          <div class="length-stack">
+            <div class="length-row"><span class="length-tag">A</span>${ruler(a)}</div>
+            <div class="length-row"><span class="length-tag">B</span>${ruler(b)}</div>
+            <div class="length-question">Difference = ? ${escapeHtml(v.unit||q.unit||'cm')}</div>
+          </div>
+        </div>
+      </div>`;
+  }
   if(v.type==='money')return `
     <div class="visual-card">${title}<div class="visual-money">
       ${v.money.map(part=>`<span class="${part.kind==='note'?'note':'coin'}">${escapeHtml(part.label)}</span>`).join('')}
