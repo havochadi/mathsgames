@@ -238,6 +238,12 @@ body{font-family:'Fredoka',sans-serif;background:var(--cream);
 	.star-mini{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:11px;font-weight:600}
 	.star-mini span{background:var(--cream);border:1px solid rgba(45,45,45,.18);
 	  border-radius:10px;padding:4px 7px}
+	.student-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;cursor:default}
+	.student-open{background:transparent;border:0;padding:0;text-align:left;font-family:'Fredoka',sans-serif;
+	  color:var(--ink);cursor:pointer;min-width:0}
+	.student-delete{background:#FFE0E0;border:2px solid var(--coral);border-radius:12px;color:var(--coral);
+	  font-family:'Fredoka',sans-serif;font-weight:700;font-size:12px;padding:8px 10px;cursor:pointer}
+	.student-delete:active{transform:translateY(1px)}
 	.score-bar{height:7px;background:#eee;border-radius:10px;margin-top:7px;
 	  border:1px solid #ddd;overflow:hidden}
 .score-fill{height:100%;border-radius:10px;transition:width .3s}
@@ -900,6 +906,20 @@ function clearLocalSnapshotsForAllStudents(){
     keysToRemove.forEach(k=>window.localStorage.removeItem(k));
   }catch{}
 }
+async function clearLocalSnapshotForStudent(studentId){
+  const sid=sanitizeStudentId(studentId);
+  try{await storage.set(scopedKey(KEY_SESSIONS,sid),'[]');}catch{}
+  try{await storage.set(scopedKey(KEY_ATTEMPTS,sid),'[]');}catch{}
+  try{await storage.set(scopedKey(KEY_UPDATED_AT,sid),'0');}catch{}
+  try{
+    if(!window.localStorage)return;
+    [
+      scopedKey(KEY_SESSIONS,sid),
+      scopedKey(KEY_ATTEMPTS,sid),
+      scopedKey(KEY_UPDATED_AT,sid)
+    ].forEach(key=>window.localStorage.removeItem(key));
+  }catch{}
+}
 
 async function cloudPull(){
   if(!ensureStudentContext())return{ok:false,error:'no-student'};
@@ -1286,6 +1306,43 @@ function logoutStudent(){
   APP.cloudStatus='No student logged in';
   APP.cloudLastSync=0;
   APP.screen='student_login';
+}
+async function deleteStudentByName(rawName){
+  const name=normalizeStudentName(rawName);
+  if(name.length<2)return{ok:false,error:'invalid student'};
+  const studentId=sanitizeStudentId(name);
+  const currentId=sanitizeStudentId(APP.cloudStudentId||APP.studentName);
+  const isCurrent=studentId===currentId
+    ||name.toLowerCase()===normalizeStudentName(APP.studentName).toLowerCase();
+
+  if(cloudConfigured()){
+    const deleted=await cloudDeleteStudentsByIds([studentId]);
+    if(!deleted.ok)return deleted;
+  }
+
+  await clearLocalSnapshotForStudent(studentId);
+  APP.studentDirectory=(APP.studentDirectory||[])
+    .filter(row=>sanitizeStudentId(row?.studentName)!==studentId);
+  APP.leaderboard=(APP.leaderboard||[])
+    .filter(row=>sanitizeStudentId(row?.studentName)!==studentId);
+
+  if(isCurrent){
+    APP.sessions=[];
+    APP.testAttempts=[];
+    APP.selectedAttempt=null;
+    APP.selectedAttemptSource='tutor';
+    APP.studentName='';
+    APP.cloudStudentId='';
+    APP.cloudLastSync=0;
+    LOCAL_UPDATED_AT=0;
+    try{await storage.set(KEY_LAST_STUDENT,'');}catch{}
+  }
+
+  APP.cloudStatus=cloudConfigured()?'Cloud synced':'Local student deleted';
+  if(cloudConfigured()){
+    await Promise.allSettled([fetchLeaderboard(),fetchStudentDirectory()]);
+  }
+  return{ok:true};
 }
 
 async function loadAll(){
@@ -1825,13 +1882,16 @@ function sTutorDash(){
           ${studentRows.length===0
             ?'<div class="no-data" style="padding:10px">No students found yet.</div>'
             :studentRows.map(s=>`
-              <button class="att-item" style="width:100%;text-align:left;margin-bottom:8px" data-a="pick-student" data-val="${encodeURIComponent(s.studentName)}">
-                <div class="att-row1">
-                  <div class="att-name">${escapeHtml(s.studentName)}</div>
-                  <div class="att-score">⭐ ${s.totalStars}</div>
-                </div>
-                <div class="att-row2"><span>${s.testsCompleted} tests</span><span>Open →</span></div>
-              </button>`).join('')}
+              <div class="att-item student-row" style="margin-bottom:8px">
+                <button class="student-open" data-a="pick-student" data-val="${encodeURIComponent(s.studentName)}">
+                  <div class="att-row1">
+                    <div class="att-name">${escapeHtml(s.studentName)}</div>
+                    <div class="att-score">⭐ ${s.totalStars}</div>
+                  </div>
+                  <div class="att-row2"><span>${s.testsCompleted} tests</span><span>Open →</span></div>
+                </button>
+                <button class="student-delete" data-a="delete-student" data-val="${encodeURIComponent(s.studentName)}">Delete</button>
+              </div>`).join('')}
         </div>
         <button class="act-btn secondary" style="width:100%;margin-top:10px" data-a="go-leaderboard">🏅 Open Leaderboard</button>
       </div>
@@ -2211,6 +2271,30 @@ function handle(a,v){
         APP.tutorTab='sessions';
         go('tutor_dash');
         toast(`Loaded ${name}`);
+      });
+      break;
+    }
+    case 'delete-student':{
+      const name=normalizeStudentName(decodeURIComponent(v||''));
+      if(name.length<2){toast('Invalid student name');break;}
+      if(!confirm(`Delete ${name} and all their session/test history? This cannot be undone.`))break;
+      APP.cloudStatus=cloudConfigured()?`Deleting ${name}...`:'Deleting local student...';
+      APP.tutorTab='settings';
+      go('tutor_dash');
+      deleteStudentByName(name).then(result=>{
+        if(!result.ok){
+          APP.cloudStatus=`Cloud error: ${shortCloudError(result.error)} (delete failed)`;
+          go('tutor_dash');
+          toast('Could not delete student');
+          return;
+        }
+        APP.tutorTab='settings';
+        go('tutor_dash');
+        toast(`Deleted ${name}`);
+      }).catch(err=>{
+        APP.cloudStatus=`Cloud error: ${shortCloudError(err?.message||err)} (delete failed)`;
+        go('tutor_dash');
+        toast('Could not delete student');
       });
       break;
     }
