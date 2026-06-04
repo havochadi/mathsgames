@@ -44,6 +44,7 @@ body{font-family:'Fredoka',sans-serif;background:var(--cream);
 .menu-card:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink)}
 .menu-card.practice{border-color:var(--mint);box-shadow:0 6px 0 #4aaa56}
 .menu-card.test{border-color:var(--coral);box-shadow:0 6px 0 #cc4444}
+.menu-card.assessment{border-color:var(--sky);box-shadow:0 6px 0 #2f70cc}
 .menu-emoji{font-size:50px;display:block;margin-bottom:8px}
 .menu-name{font-weight:700;font-size:20px;margin-bottom:3px}
 .menu-desc{font-size:12px;opacity:.65}
@@ -223,7 +224,7 @@ body{font-family:'Fredoka',sans-serif;background:var(--cream);
 .sess-item{background:white;border:2px solid var(--ink);border-radius:14px;
   padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start}
 .sess-type{font-weight:600;font-size:14px}
-.sess-type.practice{color:var(--mint)}.sess-type.test{color:var(--coral)}
+.sess-type.practice{color:var(--mint)}.sess-type.test{color:var(--coral)}.sess-type.assessment{color:var(--sky)}
 .sess-date{font-size:11px;opacity:.55;margin-top:2px}
 .sess-extra{font-size:11px;color:var(--plum);margin-top:2px;font-weight:500}
 .sess-right{text-align:right;flex-shrink:0;margin-left:8px}
@@ -787,6 +788,304 @@ for(const test of TESTS){
   if(extra.length)test.questions.push(...extra);
 }
 
+const TARGET_TOPIC_QUESTION_COUNT=10;
+function numQ(text,answer,unit='',hint='',extra={}){
+  return{type:'number',text,answer,unit,hint,...extra};
+}
+function cmpQ(text,optA,optB,answer,tip,hint){
+  return{type:'compare',text,optA,optB,answer,tip,hint};
+}
+function withAutoIds(test,items){
+  const prefix=test.id.replace(/^test_/,'');
+  return items.map((q,i)=>({...q,id:`${prefix}_auto${i+1}`}));
+}
+function autoTopicQuestions(test){
+  const id=test.id,level=Number(test.level||1);
+  if(id==='test_p1_numbers')return withAutoIds(test,[
+    numQ('Count on: <b>21, 22, 23, ?</b>',24,'','The next number after 23 is 24'),
+    numQ('What number is <b>7 tens</b> and <b>0 ones</b>?',70,'','7 tens = 70'),
+    numQ('What is <b>1 less</b> than <b>50</b>?',49,'','One less than 50 is 49'),
+    numQ('Arrange <b>16, 61, 36</b>. Enter the greatest number.',61,'','61 has the most tens'),
+    numQ('What is <b>20 more</b> than <b>45</b>?',65,'','45 + 20 = 65'),
+  ]);
+  if(id.includes('add_subtract'))return withAutoIds(test,[
+    numQ('Calculate <b>46 + 18</b>.',64,'','46 + 10 + 8 = 64'),
+    numQ('Calculate <b>75 − 28</b>.',47,'','75 − 30 + 2 = 47'),
+    numQ('There are <b>24</b> birds. <b>17</b> more join them. How many birds altogether?',41,'birds','24 + 17 = 41'),
+    numQ('Maya has <b>90</b> beads. She gives away <b>35</b>. How many are left?',55,'beads','90 − 35 = 55'),
+    numQ('Find the missing number: <b>38 + ? = 50</b>.',12,'','50 − 38 = 12'),
+  ]);
+  if(id.includes('multiplication_division'))return withAutoIds(test,[
+    numQ('Calculate <b>6 × 3</b>.',18,'','6 groups of 3 make 18'),
+    numQ('Calculate <b>24 ÷ 6</b>.',4,'','6 × 4 = 24'),
+    numQ('There are <b>5</b> boxes with <b>4</b> pencils each. How many pencils?',20,'pencils','5 × 4 = 20'),
+    numQ('<b>30</b> cookies are shared equally among <b>5</b> children. How many each?',6,'cookies','30 ÷ 5 = 6'),
+    numQ('Count by 4s: <b>4, 8, 12, 16, ?</b>',20,'','Add another 4'),
+  ]);
+  if(id==='test_p1_money')return withAutoIds(test,[
+    numQ('How many cents are <b>2</b> fifty-cent coins?',100,'cents','50 + 50 = 100 cents'),
+    numQ('<b>70 cents</b> + <b>20 cents</b> = how many cents?',90,'cents','70 + 20 = 90 cents'),
+    numQ('A snack costs <b>40 cents</b>. You pay <b>100 cents</b>. How many cents change?',60,'cents','100 − 40 = 60 cents'),
+    numQ('How many dollars are <b>2</b> ten-dollar notes and <b>5</b> one-dollar coins?',25,'dollars','20 + 5 = 25'),
+    numQ('<b>30 cents</b> + <b>30 cents</b> + <b>10 cents</b> = how many cents?',70,'cents','30 + 30 + 10 = 70 cents'),
+  ]);
+  if(id.includes('money'))return withAutoIds(test,[
+    numQ('How many cents is <b>$4.75</b>?',475,'cents','$4.75 = 475 cents'),
+    numQ('Calculate <b>$9.50 − $3.20</b>.',6.3,'dollars','9.50 − 3.20 = 6.30'),
+    numQ('A drink costs <b>$1.40</b>. What is the cost of <b>4</b> drinks?',5.6,'dollars','1.40 × 4 = 5.60'),
+    numQ('You have <b>$10</b>. You spend <b>$6.25</b>. How much is left?',3.75,'dollars','10.00 − 6.25 = 3.75'),
+    numQ('Which is larger? Enter the larger amount in cents: <b>$2.80</b> or <b>250 cents</b>.',280,'cents','$2.80 = 280 cents'),
+  ]);
+  if(id.includes('picture_graphs'))return withAutoIds(test,[
+    numQ('A picture graph has <b>8</b> symbols. Each symbol means <b>2</b>. What is the value?',16,'','8 × 2 = 16'),
+    numQ('A graph shows <b>5</b> cars. Each picture means <b>3</b> cars. How many cars?',15,'cars','5 × 3 = 15'),
+    numQ('A graph shows <b>24</b> votes for cats and <b>18</b> votes for dogs. How many more votes for cats?',6,'votes','24 − 18 = 6'),
+    numQ('A picture graph has <b>7</b> symbols. Each symbol means <b>4</b>. What is the value?',28,'','7 × 4 = 28'),
+    numQ('A graph shows <b>12</b> apples and <b>9</b> oranges. How many fruits altogether?',21,'fruits','12 + 9 = 21'),
+  ]);
+  if(id==='test_p1_length')return withAutoIds(test,[
+    numQ('A string is <b>14 cm</b>. Another is <b>6 cm</b> shorter. How long is it?',8,'cm','14 − 6 = 8 cm'),
+    numQ('A book is <b>18 cm</b> long. A card is <b>12 cm</b> long. How much longer is the book?',6,'cm','18 − 12 = 6 cm'),
+    numQ('A line is <b>7 cm</b>. Another line is <b>9 cm</b>. What is the total length?',16,'cm','7 + 9 = 16 cm'),
+    cmpQ('Which is <span class="highlight">longer</span>?',{label:'19 cm',emoji:'📏'},{label:'11 cm',emoji:'📏'},'A','Compare the numbers.','19 cm is longer than 11 cm.'),
+    numQ('A ribbon is <b>25 cm</b>. It is cut into <b>10 cm</b> and another piece. Find the other piece.',15,'cm','25 − 10 = 15 cm'),
+  ]);
+  if(id==='test_p1_time')return withAutoIds(test,[
+    numQ('What time is <b>2 hours after 4:00</b>? Enter the hour only.',6,'','4:00 plus 2 hours is 6:00'),
+    numQ('How many minutes are in <b>2 half-hours</b>?',60,'min','Two half-hours make 1 hour = 60 minutes'),
+    numQ('A game starts at <b>1:00 pm</b> and ends at <b>1:30 pm</b>. How many minutes?',30,'min','1:00 to 1:30 is 30 minutes'),
+    numQ('What time is <b>1 hour before 9:00</b>? Enter the hour only.',8,'','9:00 minus 1 hour is 8:00'),
+    numQ('How many hours from <b>10:00 am</b> to <b>12:00 pm</b>?',2,'h','10 to 12 is 2 hours'),
+  ]);
+  if(id.includes('numbers')||id.includes('whole_numbers'))return withAutoIds(test,[
+    numQ(level<=2?'What number is <b>8 hundreds</b>, <b>4 tens</b> and <b>6 ones</b>?':'Calculate <b>12 450 + 8 375</b>.',level<=2?846:20825,'',level<=2?'800 + 40 + 6 = 846':'12 450 + 8 375 = 20 825'),
+    numQ(level<=2?'Round <b>743</b> to the nearest <b>10</b>.':'Round <b>68 492</b> to the nearest <b>1000</b>.',level<=2?740:68000,'',level<=2?'743 is closer to 740':'68 492 is closer to 68 000'),
+    numQ(level<=2?'Calculate <b>529 + 184</b>.':'Calculate <b>456 × 32</b>.',level<=2?713:14592,'',level<=2?'529 + 184 = 713':'456×30 + 456×2 = 14 592'),
+    numQ(level<=2?'Calculate <b>900 − 275</b>.':'Calculate <b>35 000 − 17 860</b>.',level<=2?625:17140,'',level<=2?'900 − 275 = 625':'35 000 − 17 860 = 17 140'),
+    numQ(level<=2?'What is <b>100 more</b> than <b>635</b>?':'Calculate <b>9600 ÷ 12</b>.',level<=2?735:800,'',level<=2?'635 + 100 = 735':'9600 ÷ 12 = 800'),
+  ]);
+  if(id.includes('fractions'))return withAutoIds(test,[
+    numQ(level<=3?'<b>4/9 + 2/9</b> = ?/9. Enter the missing numerator.':'<b>5/6 − 1/4 = ?/12</b>. Enter the missing numerator.',level<=3?6:7,'',level<=3?'4 ninths + 2 ninths = 6 ninths':'5/6 = 10/12 and 1/4 = 3/12, so 7/12'),
+    numQ(level<=3?'<b>3/5 = ?/10</b>. Enter the missing numerator.':'<b>3/4 × 2/3</b> = ? Enter the answer as a decimal.',level<=3?6:0.5,'',level<=3?'Multiply numerator and denominator by 2':'3/4 × 2/3 = 0.5'),
+    numQ(level<=3?'<b>8/10 − 3/10</b> = ?/10. Enter the missing numerator.':'<b>2/5</b> of <b>75</b> is what?',level<=3?5:30,'',level<=3?'8 tenths − 3 tenths = 5 tenths':'75 ÷ 5 × 2 = 30'),
+    cmpQ('Which fraction is larger?',{label:'5/8',emoji:'🍰'},{label:'3/8',emoji:'🍰'},'A','Same denominator, compare numerators.','5/8 is larger than 3/8.'),
+    numQ(level<=3?'<b>1/4 = ?/8</b>. Enter the missing numerator.':'<b>7/8 − 1/2 = ?/8</b>. Enter the missing numerator.',level<=3?2:3,'',level<=3?'1/4 = 2/8':'1/2 = 4/8, so 7/8 − 4/8 = 3/8'),
+  ]);
+  if(id.includes('decimals_percent'))return withAutoIds(test,[
+    numQ('Calculate <b>6.75 + 2.8</b>.',9.55,'','6.75 + 2.80 = 9.55'),
+    numQ('Convert <b>4.2 kg</b> to grams.',4200,'g','4.2 × 1000 = 4200 g'),
+    numQ('Find <b>25%</b> of <b>96</b>.',24,'','25% is one quarter, and 96 ÷ 4 = 24'),
+    numQ('A $120 item has a <b>30%</b> discount. What is the sale price?',84,'dollars','30% of 120 = 36, and 120 − 36 = 84'),
+    numQ('Convert <b>0.45</b> to a percentage.',45,'%','0.45 = 45%'),
+  ]);
+  if(id.includes('decimals'))return withAutoIds(test,[
+    numQ('Calculate <b>9.4 − 3.85</b>.',5.55,'','9.40 − 3.85 = 5.55'),
+    numQ('Calculate <b>7.2 × 4</b>.',28.8,'','72 × 4 = 288, so 7.2 × 4 = 28.8'),
+    numQ('What is the value of the digit <b>6</b> in <b>12.64</b>?',0.6,'','6 is in the tenths place'),
+    numQ('Round <b>5.76</b> to 1 decimal place.',5.8,'','The hundredths digit is 6, so round up'),
+    numQ('Calculate <b>18.9 ÷ 3</b>.',6.3,'','18.9 ÷ 3 = 6.3'),
+  ]);
+  if(id.includes('percentage'))return withAutoIds(test,[
+    numQ('Find <b>40%</b> of <b>150</b>.',60,'','40/100 × 150 = 60'),
+    numQ('A price increases from <b>$50</b> to <b>$65</b>. What is the percentage increase?',30,'%','Increase = 15, and 15/50 × 100% = 30%'),
+    numQ('A $90 item has a <b>10%</b> discount. What is the sale price?',81,'dollars','10% of 90 = 9, and 90 − 9 = 81'),
+    numQ('After a <b>50%</b> increase, a number becomes <b>120</b>. What was the original number?',80,'','150% = 120, so 100% = 80'),
+    numQ('Convert <b>3/5</b> to a percentage.',60,'%','3/5 = 60/100 = 60%'),
+  ]);
+  if(id.includes('length_mass_volume'))return withAutoIds(test,[
+    numQ('Convert <b>7 km 45 m</b> to metres.',7045,'m','7 km = 7000 m, plus 45 m'),
+    numQ('Convert <b>3 kg 80 g</b> to grams.',3080,'g','3 kg = 3000 g, plus 80 g'),
+    numQ('Convert <b>9 ℓ 250 ml</b> to millilitres.',9250,'ml','9 ℓ = 9000 ml, plus 250 ml'),
+    numQ('A rope is <b>2 m 35 cm</b>. How many centimetres is that?',235,'cm','2 m = 200 cm, plus 35 cm'),
+    numQ('A packet is <b>1 kg 600 g</b>. Another is <b>750 g</b>. What is the total mass?',2350,'g','1600 + 750 = 2350 g'),
+  ]);
+  if(id.includes('length'))return withAutoIds(test,[
+    numQ('Convert <b>6 m</b> to centimetres.',600,'cm','6 × 100 = 600 cm'),
+    numQ('A ribbon is <b>3 m 20 cm</b>. How many centimetres is it?',320,'cm','3 m = 300 cm, plus 20 cm'),
+    numQ('A rope is <b>450 cm</b>. How many metres is that?',4.5,'m','450 ÷ 100 = 4.5 m'),
+    numQ('A plank is <b>2 m</b>. <b>75 cm</b> is cut off. How many centimetres remain?',125,'cm','2 m = 200 cm, and 200 − 75 = 125'),
+    numQ('Two strings are <b>1.2 m</b> and <b>80 cm</b>. What is their total in centimetres?',200,'cm','1.2 m = 120 cm, and 120 + 80 = 200'),
+  ]);
+  if(id.includes('mass'))return withAutoIds(test,[
+    numQ('Convert <b>2500 g</b> to kilograms.',2.5,'kg','2500 ÷ 1000 = 2.5 kg'),
+    numQ('A bag is <b>1 kg 250 g</b>. How many grams is that?',1250,'g','1 kg = 1000 g, plus 250 g'),
+    numQ('Which is heavier? Enter the heavier mass in grams: <b>3 kg</b> or <b>2800 g</b>.',3000,'g','3 kg = 3000 g'),
+    numQ('A parcel is <b>4 kg</b>. Another is <b>750 g</b>. What is the total in grams?',4750,'g','4000 + 750 = 4750 g'),
+    numQ('A fruit basket is <b>5000 g</b>. How many kilograms is that?',5,'kg','5000 ÷ 1000 = 5 kg'),
+  ]);
+  if(id.includes('time'))return withAutoIds(test,[
+    numQ('Convert <b>2 h 40 min</b> to minutes.',160,'min','2 h = 120 min, plus 40 min'),
+    numQ('A train leaves at <b>7:25 am</b> and arrives at <b>8:10 am</b>. How many minutes?',45,'min','7:25 to 8:00 is 35 min, then 10 min more'),
+    numQ('A show lasts <b>1 h 15 min</b>. How many minutes is that?',75,'min','60 + 15 = 75'),
+    numQ('A race starts at <b>3:40 pm</b> and lasts <b>50 min</b>. What hour does it end in? Enter the hour only.',4,'','3:40 + 50 min = 4:30'),
+    numQ('How many minutes are there in <b>4 hours</b>?',240,'min','4 × 60 = 240'),
+  ]);
+  if(id.includes('shapes'))return withAutoIds(test,[
+    numQ('How many sides does a <b>circle</b> have?',0,'sides','A circle has no straight sides'),
+    numQ('How many corners does a <b>triangle</b> have?',3,'corners','A triangle has 3 corners'),
+    cmpQ('Which shape has <span class="highlight">4 equal sides</span>?',{label:'Square',emoji:'□'},{label:'Rectangle',emoji:'▭'},'A','Think about equal side lengths.','A square has 4 equal sides.'),
+    numQ('How many sides does a <b>rectangle</b> have?',4,'sides','A rectangle has 4 sides'),
+    cmpQ('Which shape can roll smoothly?',{label:'Circle',emoji:'○'},{label:'Triangle',emoji:'△'},'A','Look for a curved shape.','A circle can roll smoothly.'),
+  ]);
+  if(id.includes('area_perimeter'))return withAutoIds(test,[
+    numQ('Find the area of a rectangle <b>14 cm</b> by <b>6 cm</b>.',84,'cm²','14 × 6 = 84 cm²'),
+    numQ('Find the perimeter of a rectangle <b>9 cm</b> by <b>8 cm</b>.',34,'cm','9 + 8 + 9 + 8 = 34 cm'),
+    numQ('A square has perimeter <b>44 cm</b>. Find one side.',11,'cm','44 ÷ 4 = 11'),
+    numQ('A rectangle has area <b>96 cm²</b> and length <b>12 cm</b>. Find its breadth.',8,'cm','96 ÷ 12 = 8 cm'),
+    numQ('A composite shape has areas <b>35 cm²</b> and <b>28 cm²</b>. Find the total area.',63,'cm²','35 + 28 = 63 cm²'),
+  ]);
+  if(id.includes('area_triangles'))return withAutoIds(test,[
+    numQ('Find the area of a triangle with base <b>20 cm</b> and height <b>6 cm</b>.',60,'cm²','1/2 × 20 × 6 = 60'),
+    numQ('A triangle has area <b>72 cm²</b> and base <b>12 cm</b>. Find its height.',12,'cm','72 = 1/2 × 12 × height'),
+    numQ('A triangle has area <b>40 cm²</b> and height <b>8 cm</b>. Find its base.',10,'cm','40 = 1/2 × base × 8'),
+    numQ('A rectangle <b>10 cm × 9 cm</b> is split into 2 equal triangles. Find one triangle area.',45,'cm²','Rectangle area is 90; half is 45'),
+    numQ('Find the area of a triangle with base <b>15 cm</b> and height <b>10 cm</b>.',75,'cm²','1/2 × 15 × 10 = 75'),
+  ]);
+  if(id.includes('angles_lines'))return withAutoIds(test,[
+    cmpQ('Which angle is <span class="highlight">less than a right angle</span>?',{label:'45°',emoji:'∠'},{label:'100°',emoji:'∠'},'A','A right angle is 90°.','45° is less than 90°.'),
+    numQ('How many degrees are in <b>two right angles</b>?',180,'°','2 × 90° = 180°'),
+    cmpQ('Which lines meet at a right angle?',{label:'Perpendicular',emoji:'⊥'},{label:'Parallel',emoji:'∥'},'A','Think of a square corner.','Perpendicular lines meet at 90°.'),
+    numQ('How many pairs of parallel sides does a rectangle have?',2,'pairs','Opposite sides are parallel'),
+    numQ('How many right angles are in a square?',4,'right angles','All 4 corners are right angles'),
+  ]);
+  if(id.includes('angles'))return withAutoIds(test,[
+    numQ('Two angles on a straight line are <b>48°</b> and <b>x°</b>. Find <b>x</b>.',132,'°','180 − 48 = 132'),
+    numQ('Angles at a point are <b>100°</b>, <b>75°</b>, <b>85°</b> and <b>x°</b>. Find <b>x</b>.',100,'°','360 − 100 − 75 − 85 = 100'),
+    numQ('A triangle has angles <b>45°</b>, <b>65°</b> and <b>x°</b>. Find <b>x</b>.',70,'°','180 − 45 − 65 = 70'),
+    numQ('An isosceles triangle has vertex angle <b>80°</b>. Find each base angle.',50,'°','180 − 80 = 100, and 100 ÷ 2 = 50'),
+    numQ('A right angle is how many degrees?',90,'°','A right angle is 90°'),
+  ]);
+  if(id.includes('factors_multiples'))return withAutoIds(test,[
+    numQ('What is the greatest common factor of <b>18</b> and <b>30</b>?',6,'','The greatest common factor is 6'),
+    numQ('What is the lowest common multiple of <b>5</b> and <b>8</b>?',40,'','40 is the first common multiple'),
+    numQ('How many factors does <b>12</b> have?',6,'factors','1, 2, 3, 4, 6, 12'),
+    numQ('What is the first common multiple of <b>6</b> and <b>9</b>?',18,'','18 is the first common multiple'),
+    numQ('What is the greatest common factor of <b>28</b> and <b>42</b>?',14,'','The greatest common factor is 14'),
+  ]);
+  if(id.includes('symmetry'))return withAutoIds(test,[
+    numQ('How many lines of symmetry does a <b>square</b> have?',4,'lines','A square has 4 symmetry lines'),
+    numQ('How many lines of symmetry does a <b>rectangle</b> have?',2,'lines','A rectangle has 2 symmetry lines'),
+    numQ('How many lines of symmetry does an <b>isosceles triangle</b> usually have?',1,'line','It has 1 line through the vertex and midpoint of the base'),
+    cmpQ('Which has more lines of symmetry?',{label:'Regular hexagon',emoji:'⬡'},{label:'Square',emoji:'□'},'A','Compare 6 and 4.','A regular hexagon has 6 lines of symmetry.'),
+    numQ('How many lines of symmetry does a <b>regular octagon</b> have?',8,'lines','A regular octagon has 8 symmetry lines'),
+  ]);
+  if(id.includes('nets_solids'))return withAutoIds(test,[
+    numQ('How many faces does a <b>cube</b> have?',6,'faces','A cube has 6 faces'),
+    numQ('How many vertices does a <b>cuboid</b> have?',8,'vertices','A cuboid has 8 vertices'),
+    cmpQ('Which solid has a net with <span class="highlight">6 squares</span>?',{label:'Cube',emoji:'🧊'},{label:'Cylinder',emoji:'🥫'},'A','A cube has square faces.','A cube net is made of 6 squares.'),
+    numQ('How many edges does a <b>cuboid</b> have?',12,'edges','A cuboid has 12 edges'),
+    cmpQ('Which solid has <span class="highlight">triangular faces</span>?',{label:'Triangular prism',emoji:'🔺'},{label:'Cube',emoji:'🧊'},'A','Look at the end faces.','A triangular prism has triangular faces.'),
+  ]);
+  if(id.includes('geometry'))return withAutoIds(test,[
+    numQ(level<=2?'How many faces does a <b>cube</b> have?':'The angles in a quadrilateral add to how many degrees?',level<=2?6:360,level<=2?'faces':'°',level<=2?'A cube has 6 faces':'A quadrilateral has angle sum 360°'),
+    cmpQ(level<=2?'Which solid can roll?':'Which quadrilateral has all sides equal?',level<=2?{label:'Sphere',emoji:'⚽'}:{label:'Rhombus',emoji:'◇'},level<=2?{label:'Cube',emoji:'🧊'}:{label:'Trapezium',emoji:'▱'},'A',level<=2?'A curved surface rolls.':'Think about side lengths.',level<=2?'A sphere can roll.':'A rhombus has all sides equal.'),
+    numQ(level<=2?'How many vertices does a <b>cube</b> have?':'A parallelogram has one angle <b>75°</b>. Find the adjacent angle.',level<=2?8:105,level<=2?'vertices':'°',level<=2?'A cube has 8 vertices':'Adjacent angles add to 180°'),
+    numQ(level<=2?'How many flat faces does a <b>cone</b> have?':'A triangle has angles <b>35°</b>, <b>80°</b> and <b>x°</b>. Find <b>x</b>.',level<=2?1:65,level<=2?'face':'°',level<=2?'A cone has 1 flat circular face':'180 − 35 − 80 = 65'),
+    cmpQ(level<=2?'Which shape has only curved surfaces?':'Which shape has one pair of parallel sides?',level<=2?{label:'Sphere',emoji:'⚽'}:{label:'Trapezium',emoji:'▱'},level<=2?{label:'Cuboid',emoji:'📦'}:{label:'Rectangle',emoji:'▭'},'A',level<=2?'A sphere has no flat face.':'Use the syllabus definition here.',level<=2?'A sphere has only a curved surface.':'A trapezium has one pair of parallel sides.'),
+  ]);
+  if(id.includes('bar_graphs')||id.includes('data')||id.includes('average'))return withAutoIds(test,[
+    numQ(id.includes('average')?'Find the average of <b>10</b>, <b>16</b>, <b>22</b> and <b>28</b>.':'A bar graph scale goes by <b>4</b>. A bar reaches the 8th mark. What value does it show?',id.includes('average')?19:32,'',id.includes('average')?'Total = 76, and 76 ÷ 4 = 19':'8 × 4 = 32'),
+    numQ(id.includes('average')?'The average of <b>6</b> numbers is <b>20</b>. What is their total?':'A table shows <b>14</b>, <b>19</b> and <b>27</b>. What is the total?',id.includes('average')?120:60,'',id.includes('average')?'20 × 6 = 120':'14 + 19 + 27 = 60'),
+    numQ('A pie chart section is <b>50%</b> of <b>90</b> pupils. How many pupils?',45,'pupils','50% is half, and half of 90 is 45'),
+    numQ('A pie chart angle is <b>180°</b>. What percentage of the chart is it?',50,'%','180/360 = 1/2 = 50%'),
+    numQ(id.includes('average')?'The average of <b>3</b> numbers is <b>12</b>. Two numbers are <b>10</b> and <b>14</b>. Find the third.':'A graph shows <b>42</b> votes for A and <b>35</b> votes for B. How many more for A?',id.includes('average')?12:7,'',id.includes('average')?'Total = 36, and 36 − 10 − 14 = 12':'42 − 35 = 7'),
+  ]);
+  if(id.includes('ratio'))return withAutoIds(test,[
+    numQ('A quantity is split in the ratio <b>3 : 4</b>. The total is <b>56</b>. Find the larger share.',32,'','7 parts = 56, so 1 part = 8 and 4 parts = 32'),
+    numQ('<b>5 : 8 = 20 : x</b>. Find <b>x</b>.',32,'','5 is multiplied by 4, so 8 × 4 = 32'),
+    numQ('The ratio of red to blue is <b>2 : 7</b>. There are <b>45</b> items. How many blue items?',35,'items','9 parts = 45, so 1 part = 5 and blue = 35'),
+    numQ('Two shares are in the ratio <b>6 : 11</b>. Their difference is <b>25</b>. Find the smaller share.',30,'','5 parts = 25, so 1 part = 5 and 6 parts = 30'),
+    numQ('The ratio of boys to girls is <b>7 : 5</b>. There are <b>48</b> pupils. How many boys?',28,'boys','12 parts = 48, so 1 part = 4 and boys = 28'),
+  ]);
+  if(id.includes('rate'))return withAutoIds(test,[
+    numQ('A worker packs <b>96</b> boxes in <b>8 min</b>. What is the rate?',12,'boxes/min','96 ÷ 8 = 12'),
+    numQ('A tap fills <b>45 ℓ</b> in <b>9 min</b>. What is the rate?',5,'ℓ/min','45 ÷ 9 = 5'),
+    numQ('A machine makes <b>7</b> toys per minute for <b>12 min</b>. How many toys?',84,'toys','7 × 12 = 84'),
+    numQ('A cyclist travels <b>54 km</b> in <b>3 h</b>. What is the speed?',18,'km/h','54 ÷ 3 = 18'),
+    numQ('A printer prints at <b>15 pages/min</b>. How many pages in <b>6 min</b>?',90,'pages','15 × 6 = 90'),
+  ]);
+  if(id.includes('speed'))return withAutoIds(test,[
+    numQ('A car travels <b>210 km</b> in <b>3 h</b>. Find its speed.',70,'km/h','210 ÷ 3 = 70'),
+    numQ('A cyclist travels at <b>18 km/h</b> for <b>4 h</b>. Find the distance.',72,'km','18 × 4 = 72'),
+    numQ('A train travels <b>300 km</b> at <b>75 km/h</b>. How many hours does it take?',4,'h','300 ÷ 75 = 4'),
+    numQ('A runner covers <b>500 m</b> in <b>100 s</b>. Find the speed.',5,'m/s','500 ÷ 100 = 5'),
+    numQ('A boat travels at <b>24 km/h</b> for <b>2.5 h</b>. Find the distance.',60,'km','24 × 2.5 = 60'),
+  ]);
+  if(id.includes('volume'))return withAutoIds(test,[
+    numQ(level<=2?'Convert <b>4 ℓ</b> to millilitres.':'Find the volume of a cuboid <b>9 cm × 5 cm × 4 cm</b>.',level<=2?4000:180,level<=2?'ml':'cm³',level<=2?'4 × 1000 = 4000 ml':'9 × 5 × 4 = 180 cm³'),
+    numQ(level<=2?'A pail has <b>12 ℓ</b>. <b>5 ℓ</b> is poured away. How much is left?':'A cube has side <b>7 cm</b>. Find its volume.',level<=2?7:343,level<=2?'ℓ':'cm³',level<=2?'12 − 5 = 7 ℓ':'7 × 7 × 7 = 343'),
+    numQ(level<=2?'A jug has <b>1500 ml</b>. How many litres is that?':'A tank has volume <b>18 000 cm³</b>. How many litres is that?',level<=2?1.5:18,'ℓ',level<=2?'1500 ÷ 1000 = 1.5 ℓ':'18 000 cm³ = 18 ℓ'),
+    numQ(level<=2?'Two bottles have <b>850 ml</b> and <b>650 ml</b>. What is the total?':'A cuboid has volume <b>240 cm³</b>, length <b>8 cm</b> and breadth <b>5 cm</b>. Find its height.',level<=2?1500:6,level<=2?'ml':'cm',level<=2?'850 + 650 = 1500 ml':'240 ÷ (8 × 5) = 6'),
+    numQ(level<=2?'Convert <b>3500 ml</b> to litres.':'A tank has base area <b>300 cm²</b> and height <b>20 cm</b>. Find its volume in litres.',level<=2?3.5:6,'ℓ',level<=2?'3500 ÷ 1000 = 3.5 ℓ':'300 × 20 = 6000 cm³ = 6 ℓ'),
+  ]);
+  if(id.includes('algebra'))return withAutoIds(test,[
+    numQ('Evaluate <b>4a − 3</b> when <b>a = 8</b>.',29,'','4×8 − 3 = 29'),
+    numQ('Solve <b>5x + 10 = 45</b>. Find <b>x</b>.',7,'','5x = 35, so x = 7'),
+    numQ('If <b>3y = 42</b>, find <b>y</b>.',14,'','42 ÷ 3 = 14'),
+    numQ('Evaluate <b>2p + 9</b> when <b>p = 11</b>.',31,'','2×11 + 9 = 31'),
+    numQ('Solve <b>6x − 8 = 40</b>. Find <b>x</b>.',8,'','6x = 48, so x = 8'),
+  ]);
+  if(id.includes('circles'))return withAutoIds(test,[
+    numQ('Using π = 22/7, find the circumference of a circle with diameter <b>28 cm</b>.',88,'cm','Circumference = πd = 22/7 × 28 = 88'),
+    numQ('Using π = 22/7, find the area of a circle with radius <b>14 cm</b>.',616,'cm²','22/7 × 14 × 14 = 616'),
+    numQ('Find the radius of a circle with diameter <b>30 cm</b>.',15,'cm','Radius is half the diameter'),
+    numQ('Using π = 22/7, find the circumference of a circle with radius <b>21 cm</b>.',132,'cm','2 × 22/7 × 21 = 132'),
+    numQ('Using π = 22/7, find the area of a semicircle with radius <b>7 cm</b>.',77,'cm²','Circle area = 154, half is 77'),
+  ]);
+  return withAutoIds(test,[
+    numQ('Calculate <b>36 + 47</b>.',83,'','36 + 47 = 83'),
+    numQ('Calculate <b>92 − 38</b>.',54,'','92 − 38 = 54'),
+    numQ('Calculate <b>8 × 7</b>.',56,'','8 × 7 = 56'),
+    numQ('Calculate <b>81 ÷ 9</b>.',9,'','9 × 9 = 81'),
+    numQ('Find the missing number: <b>25 + ? = 100</b>.',75,'','100 − 25 = 75'),
+  ]);
+}
+for(const test of TESTS){
+  const needed=Math.max(0,TARGET_TOPIC_QUESTION_COUNT-test.questions.length);
+  if(needed)test.questions.push(...autoTopicQuestions(test).slice(0,needed));
+}
+
+function cloneQuestionForAssessment(question,id,topicName){
+  const q=JSON.parse(JSON.stringify(question));
+  q.id=id;
+  q.text=`<span class="highlight">${topicName}</span><br>${q.text}`;
+  return q;
+}
+function buildSummativeQuestions(level){
+  const tests=TESTS.filter(t=>Number(t.level||1)===level);
+  return tests.flatMap((test,testIndex)=>{
+    const topic=String(test.name||'Topic').replace(/^P\d+\s*/,'');
+    const picks=[test.questions[0],test.questions[Math.min(5,test.questions.length-1)]].filter(Boolean);
+    return picks.map((q,questionIndex)=>
+      cloneQuestionForAssessment(q,`sum_p${level}_${testIndex+1}_${questionIndex+1}`,topic)
+    );
+  });
+}
+const SUMMATIVE_ASSESSMENTS=[1,2,3,4,5,6].map(level=>({
+  id:`summative_p${level}`,
+  level,
+  name:`P${level} Summative Assessment`,
+  emoji:'🏆',
+  desc:`Mixed assessment covering every P${level} topic`,
+  difficulty:level<=2?'medium':'hard',
+  assessmentType:'summative',
+  questions:buildSummativeQuestions(level),
+}));
+const ALL_QUIZZES=[...TESTS,...SUMMATIVE_ASSESSMENTS];
+const INSPIRATION_QUOTES=[
+  {lead:'Keep going!',text:'Small steps become strong skills.'},
+  {lead:'You can do this!',text:'Read carefully, think calmly, then try.'},
+  {lead:'Maths grows!',text:'Every mistake is a clue, not a stop sign.'},
+  {lead:'Be brave!',text:'Hard questions are just puzzles warming up.'},
+  {lead:'Stay curious!',text:'The strategy matters more than rushing.'},
+  {lead:'Nice and steady!',text:'Check the unit, spot the pattern, trust your thinking.'},
+  {lead:'Challenge accepted!',text:'Your brain gets stronger every round.'},
+  {lead:'Think like a detective!',text:'Look for what the question is really asking.'},
+];
+function randomInspirationQuote(){
+  return INSPIRATION_QUOTES[Math.floor(Math.random()*INSPIRATION_QUOTES.length)];
+}
+
 
 	// ================================================================
 	// APP STATE
@@ -1044,7 +1343,7 @@ function difficultyStarMultiplier(difficulty){
   return 1;
 }
 function testById(testId){
-  return TESTS.find(t=>t.id===testId)||null;
+  return ALL_QUIZZES.find(t=>t.id===testId)||null;
 }
 function attemptDifficultyMultiplier(attempt){
   const test=testById(String(attempt?.testId||''));
@@ -1880,7 +2179,7 @@ function render(){
   const map={
     student_login:sStudentLogin,
     home:sHome,practice:sPractice,
-    test_menu:sTestMenu,test_active:sTestActive,
+    test_menu:sTestMenu,assessment_menu:sAssessmentMenu,test_active:sTestActive,
     test_results:sTestResults,test_history:sTestHistory,review:sReview,
     leaderboard:sLeaderboard,
     tutor_login:sTutorLogin,tutor_dash:sTutorDash,
@@ -1919,13 +2218,14 @@ function sStudentLogin(){
 
 function sHome(){
   const totalStars=APP.testAttempts.reduce((sum,a)=>sum+calcAttemptStars(a),0);
+  const quote=randomInspirationQuote();
   return `
 <div class="screen">
   <div class="home-header">
     <div class="home-title">${escapeHtml(appBrandTitle())}</div>
     <div class="home-sub">${escapeHtml(APP.studentName||'Student')} · ⭐ ${totalStars} stars</div>
   </div>
-  <div class="cheat-bar"><strong>Remember!</strong> Read the unit, then choose the right strategy.</div>
+  <div class="cheat-bar"><strong>${escapeHtml(quote.lead)}</strong> ${escapeHtml(quote.text)}</div>
   <div class="menu-grid">
     <div class="menu-card practice" data-a="go-practice">
       <span class="menu-emoji">✏️</span>
@@ -1935,11 +2235,16 @@ function sHome(){
     <div class="menu-card test" data-a="go-test-menu">
       <span class="menu-emoji">📝</span>
       <div class="menu-name">Test</div>
-      <div class="menu-desc">Take a scored quiz</div>
+      <div class="menu-desc">Topic quizzes</div>
+    </div>
+    <div class="menu-card assessment" data-a="go-assessment-menu">
+      <span class="menu-emoji">🏆</span>
+      <div class="menu-name">Summative</div>
+      <div class="menu-desc">Mixed level assessment</div>
     </div>
     <div class="menu-card" data-a="go-test-history">
       <span class="menu-emoji">📚</span>
-      <div class="menu-name">My Test History</div>
+      <div class="menu-name">My Quiz History</div>
       <div class="menu-desc">Review past attempts</div>
     </div>
     <div class="menu-card" data-a="go-leaderboard">
@@ -2000,11 +2305,11 @@ function sTestHistory(){
 <div class="screen">
   <div class="nav">
     <button class="nav-back" data-a="back-home">← Home</button>
-    <div class="nav-title">My Test History</div>
+    <div class="nav-title">My Quiz History</div>
     <div style="width:60px"></div>
   </div>
   ${attempts.length===0
-    ?'<div class="no-data">No completed tests yet. Finish a quiz to review it here.</div>'
+    ?'<div class="no-data">No completed quizzes yet. Finish a topic test or summative assessment to review it here.</div>'
     :attempts.map(a=>{
       const pct=Math.round(a.score/a.total*100);
 	      const col=pct>=80?'var(--mint)':pct>=50?'var(--sun)':'var(--coral)';
@@ -2078,7 +2383,7 @@ function sTestMenu(){
 <div class="screen">
   <div class="nav">
     <button class="nav-back" data-a="back-home">← Home</button>
-    <div class="nav-title">Choose a Test</div>
+    <div class="nav-title">Choose a Topic Test</div>
     <div style="width:60px"></div>
   </div>
   <div class="test-grid">
@@ -2112,10 +2417,42 @@ function sTestMenu(){
 </div>`;
 }
 
+function sAssessmentMenu(){
+  return `
+<div class="screen">
+  <div class="nav">
+    <button class="nav-back" data-a="back-home">← Home</button>
+    <div class="nav-title">Summative Assessment</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="test-grid">
+    ${SUMMATIVE_ASSESSMENTS.map(t=>{
+      const worth=testStarWorth(t);
+      const topics=TESTS.filter(x=>Number(x.level||1)===Number(t.level||1)).length;
+      return`
+      <div class="test-card" data-a="start-test" data-val="${t.id}">
+        <div class="test-emoji">${t.emoji}</div>
+        <div>
+          <div class="test-name">${t.name}</div>
+          <div class="test-desc">${t.desc} · ${topics} topics included</div>
+          <div class="test-meta">
+            <span class="tag ${t.difficulty}">${cap(t.difficulty)}</span>
+            <span class="tag" style="background:#f0f0f0">${t.questions.length} questions</span>
+            <span class="tag" style="background:#fff4d6">⭐ Base ${worth.base}</span>
+            <span class="tag" style="background:#e8f6ff">⭐ Max ${worth.max}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>
+  <button class="act-btn secondary" style="width:100%;margin-top:12px" data-a="go-test-history">📚 Review Past Assessments</button>
+</div>`;
+}
+
 function sTestActive(){
   const t=APP.test,q=t.questions[t.current];
   const pct=Math.round(t.current/t.questions.length*100);
-  const obj=TESTS.find(x=>x.id===t.id);
+  const obj=testById(t.id);
   const worth=obj?testStarWorth(obj):null;
   return `
 <div class="screen">
@@ -2144,7 +2481,7 @@ function sTestActive(){
 }
 
 function sTestResults(){
-  const t=APP.test,obj=TESTS.find(x=>x.id===t.id);
+  const t=APP.test,obj=testById(t.id);
   const score=t.answers.filter(a=>a.correct).length,total=t.questions.length;
   const pct=Math.round(score/total*100);
   const attempt=t.completedAttempt||{
@@ -2159,10 +2496,13 @@ function sTestResults(){
     :pct>=70?['🌟','Great job! Keep it up!']
     :pct>=50?['💪','Good effort! Review and try again!']
     :['📚',"Keep practising — you'll get there!"];
+  const isAssessment=obj?.assessmentType==='summative'||t.menu==='assessment_menu';
+  const backAction=isAssessment?'back-assessment-menu':'back-test-menu';
+  const backLabel=isAssessment?'Assessments':'Tests';
   return `
 <div class="screen">
   <div class="nav">
-    <button class="nav-back" data-a="back-test-menu">← Tests</button>
+    <button class="nav-back" data-a="${backAction}">← ${backLabel}</button>
     <div class="nav-title">Results</div>
     <div style="width:60px"></div>
   </div>
@@ -2181,13 +2521,13 @@ function sTestResults(){
     <button class="act-btn secondary" data-a="go-review-test">📋 Review Answers</button>
     <button class="act-btn primary" data-a="retry-test">🔄 Try Again</button>
   </div>
-  <button class="act-btn secondary" style="width:100%;margin-top:10px" data-a="back-test-menu">← Back to Tests</button>
+  <button class="act-btn secondary" style="width:100%;margin-top:10px" data-a="${backAction}">← Back to ${backLabel}</button>
 </div>`;
 }
 
 function sReview(){
   const rv=APP.review;
-  const obj=rv.source==='test'?TESTS.find(x=>x.id===APP.test.id):null;
+  const obj=rv.source==='test'?testById(APP.test.id):null;
   const title=rv.source==='practice'?'Practice Review':`${obj?.name||'Test'} Review`;
   return `
 <div class="screen">
@@ -2271,7 +2611,7 @@ function sTutorDash(){
       :sess.map(s=>`
         <div class="sess-item">
           <div style="flex:1;min-width:0">
-            <div class="sess-type ${s.type}">${s.type==='practice'?'✏️ Practice':'📝 Test'+(s.testName?' · '+s.testName:'')}</div>
+            <div class="sess-type ${s.type}">${s.type==='practice'?'✏️ Practice':(s.type==='assessment'?'🏆 Assessment':'📝 Test')+(s.testName?' · '+s.testName:'')}</div>
             <div class="sess-date">${fmtDate(s.start)}${s.abandoned?' · abandoned':''}</div>
             ${s.type==='practice'&&s.questionsAttempted!=null
               ?`<div class="sess-extra">📋 ${s.questionsAttempted} Qs &nbsp;·&nbsp; ✅ ${s.correctAnswers||0} correct</div>`:''}
@@ -2283,7 +2623,7 @@ function sTutorDash(){
         </div>`).join('');
 
   }else if(APP.tutorTab==='tests'){
-    content=testHistory.length===0?`<div class="no-data">No tests completed yet.</div>`
+    content=testHistory.length===0?`<div class="no-data">No quizzes completed yet.</div>`
       :testHistory.map(a=>{
         const pct=Math.round(a.score/a.total*100);
         const col=pct>=80?'var(--mint)':pct>=50?'var(--sun)':'var(--coral)';
@@ -2390,7 +2730,7 @@ function sTutorDash(){
   </div>
   <div class="t-tabs">
     <button class="t-tab${APP.tutorTab==='sessions'?' active':''}" data-a="t-tab" data-val="sessions">📋 Sessions</button>
-    <button class="t-tab${APP.tutorTab==='tests'?' active':''}" data-a="t-tab" data-val="tests">📝 Test Results</button>
+    <button class="t-tab${APP.tutorTab==='tests'?' active':''}" data-a="t-tab" data-val="tests">📝 Quiz Results</button>
     <button class="t-tab${APP.tutorTab==='settings'?' active':''}" data-a="t-tab" data-val="settings">⚙️ Settings</button>
   </div>
   ${content}
@@ -2410,7 +2750,7 @@ function sAttemptDetail(){
   const col=pct>=80?'var(--mint)':pct>=50?'var(--sun)':'var(--coral)';
   const stars=calcAttemptStars(a);
   const backAction=isStudentView?'back-test-history':'back-to-tests';
-  const backLabel=isStudentView?'Test History':'Test Results';
+  const backLabel=isStudentView?'Quiz History':'Quiz Results';
   const answerLabel=isStudentView?'Your answer':'Student answered';
   return `
 <div class="screen">
@@ -2581,7 +2921,7 @@ async function submitTest(raw){
   t.answers.push({idx:t.current,q,userAnswer:String(raw),correct:ok});
   if(t.current+1>=t.questions.length){
     // Build & persist detailed attempt record for tutor
-    const obj=TESTS.find(x=>x.id===t.id);
+    const obj=testById(t.id);
     const score=t.answers.filter(a=>a.correct).length;
     const attempt={
       id:'a'+Date.now(),
@@ -2775,6 +3115,9 @@ function handle(a,v){
     case 'go-test-menu':
       if(!APP.studentName){go('student_login');toast('Login with your name first');break;}
       go('test_menu');break;
+    case 'go-assessment-menu':
+      if(!APP.studentName){go('student_login');toast('Login with your name first');break;}
+      go('assessment_menu');break;
     case 'go-test-history':
       if(!APP.studentName){go('student_login');toast('Login with your name first');break;}
       go('test_history');break;
@@ -2802,20 +3145,23 @@ function handle(a,v){
       APP.review={source:'practice',items:APP.practice.history,backTo:'practice'};go('review');break;
     case 'start-test':{
       if(!APP.studentName){go('student_login');toast('Login with your name first');break;}
-      const t=TESTS.find(x=>x.id===v);
-      APP.test={id:v,questions:t.questions,current:0,answers:[]};
-      startSession('test');go('test_active');break;
+      const t=testById(v);
+      if(!t){toast('Quiz not found');break;}
+      APP.test={id:v,questions:t.questions,current:0,answers:[],menu:t.assessmentType==='summative'?'assessment_menu':'test_menu'};
+      startSession(t.assessmentType==='summative'?'assessment':'test');go('test_active');break;
     }
     case 'abandon-test':
-      endSession({testId:APP.test.id,abandoned:true}).then(()=>go('test_menu'));break;
+      endSession({testId:APP.test.id,abandoned:true}).then(()=>go(APP.test.menu||'test_menu'));break;
     case 'retry-test':{
-      const t=TESTS.find(x=>x.id===APP.test.id);
-      APP.test={id:APP.test.id,questions:t.questions,current:0,answers:[]};
-      startSession('test');go('test_active');break;
+      const t=testById(APP.test.id);
+      if(!t){toast('Quiz not found');go('home');break;}
+      APP.test={id:APP.test.id,questions:t.questions,current:0,answers:[],menu:t.assessmentType==='summative'?'assessment_menu':'test_menu'};
+      startSession(t.assessmentType==='summative'?'assessment':'test');go('test_active');break;
     }
     case 'go-review-test':
       APP.review={source:'test',items:APP.test.answers,backTo:'test_results'};go('review');break;
     case 'back-test-menu':go('test_menu');break;
+    case 'back-assessment-menu':go('assessment_menu');break;
     case 'back-test-history':go('test_history');break;
     case 'back-from-review':go(APP.review.backTo||'home');break;
     case 'back-home':{
