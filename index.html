@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Alya's Weight Adventure</title>
+<title>Alya's Maths Adventure</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 <style>
 /* ── RESET & TOKENS ──────────────────────────────────────────── */
@@ -300,83 +300,123 @@ const ITEMS=[
 // ================================================================
 // DATA ▸ TESTS  — add new test objects here; each question is
 //   { id, type:'number'|'compare', text(HTML), answer, unit, hint }
-//   or for compare: { ..., optA:{label,emoji,weightG}, optB:{...}, answer:'A'|'B' }
+//   or for compare: { ..., optA:{label,emoji}, optB:{...}, answer:'A'|'B' }
 // ================================================================
 const TESTS=[
   {
-    id:'test_starter',name:'Starter Quiz',emoji:'🌱',
-    desc:'Whole number conversions only',difficulty:'easy',
+    id:'test_p1_foundations',name:'P1 Foundations',emoji:'🌱',
+    desc:'Numbers, money, length, time, shapes and picture graphs',difficulty:'easy',
     questions:[
-      {id:'s1',type:'number',text:'How many <b>grams</b> is <b>2 kg</b>?',answer:2000,unit:'g',hint:'2 × 1000 = 2000 g'},
-      {id:'s2',type:'number',text:'How many <b>grams</b> is <b>5 kg</b>?',answer:5000,unit:'g',hint:'5 × 1000 = 5000 g'},
-      {id:'s3',type:'number',text:'How many <b>kg</b> is <b>3000 g</b>?',answer:3,unit:'kg',hint:'3000 ÷ 1000 = 3 kg'},
-      {id:'s4',type:'number',text:'How many <b>kg</b> is <b>8000 g</b>?',answer:8,unit:'kg',hint:'8000 ÷ 1000 = 8 kg'},
-      {id:'s5',type:'compare',text:'Which is heavier?',
-        optA:{label:'4 kg',emoji:'📦',weightG:4000},optB:{label:'3500 g',emoji:'📦',weightG:3500},
-        answer:'A',hint:'4 kg = 4000 g > 3500 g'},
-      {id:'s6',type:'compare',text:'Which is heavier?',
-        optA:{label:'2000 g',emoji:'⚖️',weightG:2000},optB:{label:'1 kg',emoji:'⚖️',weightG:1000},
-        answer:'A',hint:'2000 g = 2 kg > 1 kg'},
-      {id:'s7',type:'number',text:'One egg ≈ <b>50 g</b>. How many <b>grams</b> are <b>4 eggs</b>?',answer:200,unit:'g',hint:'4 × 50 = 200 g'},
-      {id:'s8',type:'number',text:'A cat weighs <b>3 kg</b>. How many <b>grams</b>?',answer:3000,unit:'g',hint:'3 × 1000 = 3000 g'},
+      {id:'p1_1',type:'number',text:'What number is <b>4 tens</b> and <b>7 ones</b>?',answer:47,unit:'',hint:'4 tens = 40, and 40 + 7 = 47'},
+      {id:'p1_2',type:'number',text:'Calculate <b>28 + 15</b>.',answer:43,unit:'',hint:'28 + 10 + 5 = 43'},
+      {id:'p1_3',type:'number',text:'Calculate <b>64 − 29</b>.',answer:35,unit:'',hint:'64 − 30 + 1 = 35'},
+      {id:'p1_4',type:'number',text:'There are <b>6</b> bags with <b>4</b> marbles each. How many marbles?',answer:24,unit:'',hint:'6 × 4 = 24'},
+      {id:'p1_5',type:'number',text:'<b>18</b> stickers are shared equally among <b>3</b> children. How many each?',answer:6,unit:'',hint:'18 ÷ 3 = 6'},
+      {id:'p1_6',type:'number',text:'<b>75 cents</b> + <b>25 cents</b> = how many cents?',answer:100,unit:'cents',hint:'75 + 25 = 100 cents'},
+      {id:'p1_7',type:'number',text:'A ribbon is <b>12 cm</b>. Another ribbon is <b>5 cm</b> longer. What is its length?',answer:17,unit:'cm',hint:'12 + 5 = 17 cm'},
+      {id:'p1_8',type:'number',text:'How many minutes are there in <b>half an hour</b>?',answer:30,unit:'min',hint:'Half of 60 minutes is 30 minutes'},
+      {id:'p1_9',type:'compare',text:'Which shape has <span class="highlight">no corners</span>?',
+        optA:{label:'Circle',emoji:'○'},optB:{label:'Square',emoji:'□'},
+        answer:'A',tip:'Look at the sides and corners.',hint:'A circle has no corners.'},
+      {id:'p1_10',type:'number',text:'A picture graph shows <b>5</b> apple pictures. Each picture stands for <b>2</b> apples. How many apples?',answer:10,unit:'apples',hint:'5 × 2 = 10 apples'},
     ]
   },
   {
-    id:'test_mixed',name:'Mixed Measures',emoji:'⚖️',
-    desc:'Decimals & half-kg values',difficulty:'medium',
+    id:'test_p2_builders',name:'P2 Builders',emoji:'🧱',
+    desc:'Numbers to 1000, fractions, money, mass, volume and 3D shapes',difficulty:'easy',
     questions:[
-      {id:'m1',type:'number',text:'How many <b>grams</b> is <b>1.5 kg</b>?',answer:1500,unit:'g',hint:'1.5 × 1000 = 1500 g'},
-      {id:'m2',type:'number',text:'How many <b>grams</b> is <b>2.5 kg</b>?',answer:2500,unit:'g',hint:'2.5 × 1000 = 2500 g'},
-      {id:'m3',type:'number',text:'How many <b>kg</b> is <b>1500 g</b>?',answer:1.5,unit:'kg',hint:'1500 ÷ 1000 = 1.5 kg'},
-      {id:'m4',type:'number',text:'How many <b>kg</b> is <b>2500 g</b>?',answer:2.5,unit:'kg',hint:'2500 ÷ 1000 = 2.5 kg'},
-      {id:'m5',type:'compare',text:'Which is heavier?',
-        optA:{label:'1.5 kg',emoji:'📦',weightG:1500},optB:{label:'1800 g',emoji:'📦',weightG:1800},
-        answer:'B',hint:'1.5 kg = 1500 g < 1800 g'},
-      {id:'m6',type:'compare',text:'Which is heavier?',
-        optA:{label:'3500 g',emoji:'📦',weightG:3500},optB:{label:'3 kg',emoji:'📦',weightG:3000},
-        answer:'A',hint:'3 kg = 3000 g < 3500 g'},
-      {id:'m7',type:'number',text:'Bag = <b>2.5 kg</b> + book = <b>800 g</b>. Total in <b>kg</b>?',answer:3.3,unit:'kg',hint:'2.5 + 0.8 = 3.3 kg'},
-      {id:'m8',type:'number',text:'4 apples × <b>250 g</b> each. Total in <b>kg</b>?',answer:1,unit:'kg',hint:'4 × 250 = 1000 g = 1 kg'},
-      {id:'m9',type:'compare',text:'Which is heavier?',
-        optA:{label:'2.25 kg',emoji:'📦',weightG:2250},optB:{label:'2200 g',emoji:'📦',weightG:2200},
-        answer:'A',hint:'2.25 kg = 2250 g > 2200 g'},
-      {id:'m10',type:'number',text:'A dog weighs <b>8 kg</b>. How many <b>grams</b>?',answer:8000,unit:'g',hint:'8 × 1000 = 8000 g'},
+      {id:'p2_1',type:'number',text:'What number is <b>6 hundreds</b>, <b>3 tens</b> and <b>8 ones</b>?',answer:638,unit:'',hint:'600 + 30 + 8 = 638'},
+      {id:'p2_2',type:'number',text:'Calculate <b>347 + 256</b>.',answer:603,unit:'',hint:'347 + 200 + 50 + 6 = 603'},
+      {id:'p2_3',type:'number',text:'Calculate <b>8 × 5</b>.',answer:40,unit:'',hint:'8 groups of 5 make 40'},
+      {id:'p2_4',type:'number',text:'Calculate <b>36 ÷ 4</b>.',answer:9,unit:'',hint:'4 × 9 = 36'},
+      {id:'p2_5',type:'number',text:'<b>3/8 + 2/8</b> = ?/8. Enter the missing numerator.',answer:5,unit:'',hint:'3 eighths + 2 eighths = 5 eighths'},
+      {id:'p2_6',type:'number',text:'How many cents is <b>$3.25</b>?',answer:325,unit:'cents',hint:'$3.25 = 300 cents + 25 cents'},
+      {id:'p2_7',type:'compare',text:'Which mass is heavier?',
+        optA:{label:'2 kg',emoji:'📦'},optB:{label:'1500 g',emoji:'📦'},
+        answer:'A',tip:'Convert to the same unit first.',hint:'2 kg = 2000 g, which is heavier than 1500 g'},
+      {id:'p2_8',type:'number',text:'A jug has <b>3 ℓ</b> of water. Another has <b>2 ℓ</b>. How many litres altogether?',answer:5,unit:'ℓ',hint:'3 + 2 = 5 ℓ'},
+      {id:'p2_9',type:'number',text:'Convert <b>2 h 15 min</b> to minutes.',answer:135,unit:'min',hint:'2 h = 120 min, and 120 + 15 = 135'},
+      {id:'p2_10',type:'compare',text:'Which solid has <span class="highlight">6 square faces</span>?',
+        optA:{label:'Cube',emoji:'🧊'},optB:{label:'Cone',emoji:'🍦'},
+        answer:'A',tip:'Think about faces of 3D shapes.',hint:'A cube has 6 square faces.'},
+      {id:'p2_11',type:'number',text:'A picture graph has <b>4</b> symbols. Each symbol represents <b>5</b> pupils. How many pupils?',answer:20,unit:'pupils',hint:'4 × 5 = 20 pupils'},
     ]
   },
   {
-    id:'test_realworld',name:'Real World',emoji:'🌍',
-    desc:'Everyday object challenges',difficulty:'medium',
+    id:'test_p3_measurement',name:'P3 Measurement & Graphs',emoji:'📏',
+    desc:'Compound units, area, perimeter, angles, time and bar graphs',difficulty:'medium',
     questions:[
-      {id:'r1',type:'number',text:'A watermelon weighs <b>5 kg</b>. How many <b>grams</b>?',answer:5000,unit:'g',hint:'5 × 1000 = 5000 g'},
-      {id:'r2',type:'number',text:'A loaf of bread weighs <b>400 g</b>. How many <b>kg</b>?',answer:0.4,unit:'kg',hint:'400 ÷ 1000 = 0.4 kg'},
-      {id:'r3',type:'number',text:'3 books × <b>500 g</b> each. Total in <b>kg</b>?',answer:1.5,unit:'kg',hint:'3 × 500 = 1500 g = 1.5 kg'},
-      {id:'r4',type:'number',text:'School bag = <b>3 kg</b>, bottle = <b>500 g</b>. Total in <b>grams</b>?',answer:3500,unit:'g',hint:'3000 + 500 = 3500 g'},
-      {id:'r5',type:'number',text:'A potato ≈ <b>150 g</b>. How many <b>grams</b> are <b>8</b>?',answer:1200,unit:'g',hint:'8 × 150 = 1200 g'},
-      {id:'r6',type:'number',text:'Laptop <b>2 kg</b> + charger <b>500 g</b>. Total in <b>kg</b>?',answer:2.5,unit:'kg',hint:'2 + 0.5 = 2.5 kg'},
-      {id:'r7',type:'number',text:'Dog (<b>15 kg</b>) + cat (<b>4 kg</b>). Combined in <b>grams</b>?',answer:19000,unit:'g',hint:'19 × 1000 = 19000 g'},
-      {id:'r8',type:'number',text:'10 eggs × <b>50 g</b> each. Total in <b>kg</b>?',answer:0.5,unit:'kg',hint:'500 g ÷ 1000 = 0.5 kg'},
+      {id:'p3_1',type:'number',text:'Calculate <b>8000 + 1700</b>.',answer:9700,unit:'',hint:'8000 + 1700 = 9700'},
+      {id:'p3_2',type:'number',text:'Calculate <b>248 × 3</b>.',answer:744,unit:'',hint:'200×3 + 40×3 + 8×3 = 744'},
+      {id:'p3_3',type:'number',text:'<b>2/3 = ?/12</b>. Enter the missing numerator.',answer:8,unit:'',hint:'3 × 4 = 12, so 2 × 4 = 8'},
+      {id:'p3_4',type:'number',text:'Calculate <b>$12.50 − $7.35</b>.',answer:5.15,unit:'dollars',hint:'12.50 − 7.35 = 5.15'},
+      {id:'p3_5',type:'number',text:'Convert <b>3 km 250 m</b> to metres.',answer:3250,unit:'m',hint:'3 km = 3000 m, and 3000 + 250 = 3250'},
+      {id:'p3_6',type:'number',text:'Convert <b>2 kg 450 g</b> to grams.',answer:2450,unit:'g',hint:'2 kg = 2000 g, and 2000 + 450 = 2450'},
+      {id:'p3_7',type:'number',text:'Convert <b>4 ℓ 300 ml</b> to millilitres.',answer:4300,unit:'ml',hint:'4 ℓ = 4000 ml, and 4000 + 300 = 4300'},
+      {id:'p3_8',type:'number',text:'A lesson starts at <b>2:45 pm</b> and ends at <b>3:20 pm</b>. What is the duration?',answer:35,unit:'min',hint:'2:45 to 3:00 is 15 min, then 20 min more'},
+      {id:'p3_9',type:'number',text:'Find the area of a rectangle with length <b>8 cm</b> and breadth <b>6 cm</b>.',answer:48,unit:'cm²',hint:'Area = 8 × 6 = 48 cm²'},
+      {id:'p3_10',type:'number',text:'Find the perimeter of a rectangle with length <b>12 cm</b> and breadth <b>5 cm</b>.',answer:34,unit:'cm',hint:'Perimeter = 12 + 5 + 12 + 5 = 34 cm'},
+      {id:'p3_11',type:'compare',text:'Which angle is <span class="highlight">greater than a right angle</span>?',
+        optA:{label:'120°',emoji:'∠'},optB:{label:'90°',emoji:'∟'},
+        answer:'A',tip:'A right angle is 90°.',hint:'120° is greater than 90°.'},
+      {id:'p3_12',type:'number',text:'A bar graph shows Class A has <b>18</b> pupils and Class B has <b>24</b>. How many more pupils are in Class B?',answer:6,unit:'pupils',hint:'24 − 18 = 6'},
     ]
   },
   {
-    id:'test_challenge',name:'Big Challenge',emoji:'🏆',
-    desc:'Complex & multi-step problems',difficulty:'hard',
+    id:'test_p4_decimals_geometry',name:'P4 Decimals & Geometry',emoji:'🧭',
+    desc:'Factors, multiples, fractions, decimals, symmetry, nets and data',difficulty:'medium',
     questions:[
-      {id:'c1',type:'number',text:'How many <b>grams</b> is <b>3.75 kg</b>?',answer:3750,unit:'g',hint:'3.75 × 1000 = 3750 g'},
-      {id:'c2',type:'number',text:'How many <b>kg</b> is <b>4250 g</b>?',answer:4.25,unit:'kg',hint:'4250 ÷ 1000 = 4.25 kg'},
-      {id:'c3',type:'compare',text:'Which is heavier?',
-        optA:{label:'3.75 kg',emoji:'📦',weightG:3750},optB:{label:'3800 g',emoji:'📦',weightG:3800},
-        answer:'B',hint:'3.75 kg = 3750 g < 3800 g'},
-      {id:'c4',type:'number',text:'6 bananas × <b>120 g</b>. Total in <b>kg</b>?',answer:0.72,unit:'kg',hint:'720 g ÷ 1000 = 0.72 kg'},
-      {id:'c5',type:'number',text:'Bag = <b>1.5 kg</b> + 3 books × <b>500 g</b>. Total in <b>kg</b>?',answer:3,unit:'kg',hint:'1.5 + 1.5 = 3 kg'},
-      {id:'c6',type:'number',text:'How many <b>kg</b> is <b>1200 g</b>?',answer:1.2,unit:'kg',hint:'1200 ÷ 1000 = 1.2 kg'},
-      {id:'c7',type:'compare',text:'Which is heavier?',
-        optA:{label:'2.8 kg',emoji:'📦',weightG:2800},optB:{label:'2750 g',emoji:'📦',weightG:2750},
-        answer:'A',hint:'2.8 kg = 2800 g > 2750 g'},
-      {id:'c8',type:'number',text:'Need <b>1.25 kg</b> flour. Have <b>900 g</b>. How many more <b>grams</b>?',answer:350,unit:'g',hint:'1250 − 900 = 350 g'},
-      {id:'c9',type:'number',text:'<b>4 kg</b> minus <b>750 g</b>. Answer in <b>grams</b>?',answer:3250,unit:'g',hint:'4000 − 750 = 3250 g'},
-      {id:'c10',type:'number',text:'5 bottles × <b>750 g</b> each. Total in <b>kg</b>?',answer:3.75,unit:'kg',hint:'3750 g ÷ 1000 = 3.75 kg'},
-      {id:'c11',type:'number',text:'<b>3.2 kg</b> + <b>800 g</b> = ? <b>kg</b>',answer:4,unit:'kg',hint:'3.2 + 0.8 = 4 kg'},
-      {id:'c12',type:'number',text:'Crate = <b>2.5 kg</b>. Remove 3 items × <b>200 g</b>. New weight in <b>kg</b>?',answer:1.9,unit:'kg',hint:'2.5 − 0.6 = 1.9 kg'},
+      {id:'p4_1',type:'number',text:'Round <b>47 628</b> to the nearest <b>1000</b>.',answer:48000,unit:'',hint:'47 628 is closer to 48 000 than 47 000'},
+      {id:'p4_2',type:'number',text:'What is the <b>greatest common factor</b> of <b>12</b> and <b>18</b>?',answer:6,unit:'',hint:'Common factors are 1, 2, 3 and 6'},
+      {id:'p4_3',type:'number',text:'What is the <b>lowest common multiple</b> of <b>4</b> and <b>6</b>?',answer:12,unit:'',hint:'12 is the first common multiple'},
+      {id:'p4_4',type:'number',text:'<b>3/4 − 1/6 = ?/12</b>. Enter the missing numerator.',answer:7,unit:'',hint:'3/4 = 9/12 and 1/6 = 2/12, so 9/12 − 2/12 = 7/12'},
+      {id:'p4_5',type:'number',text:'What is the value of the digit <b>7</b> in <b>3.708</b>?',answer:0.7,unit:'',hint:'7 is in the tenths place'},
+      {id:'p4_6',type:'number',text:'Calculate <b>4.25 + 3.6</b>.',answer:7.85,unit:'',hint:'4.25 + 3.60 = 7.85'},
+      {id:'p4_7',type:'number',text:'Calculate <b>6.4 × 3</b>.',answer:19.2,unit:'',hint:'64 × 3 = 192, so 6.4 × 3 = 19.2'},
+      {id:'p4_8',type:'number',text:'A composite figure is made from rectangles <b>10 cm × 4 cm</b> and <b>6 cm × 3 cm</b>. Find the total area.',answer:58,unit:'cm²',hint:'10×4 + 6×3 = 40 + 18 = 58'},
+      {id:'p4_9',type:'number',text:'Angles at a point are <b>90°</b>, <b>120°</b> and <b>x°</b>. Find <b>x</b>.',answer:150,unit:'°',hint:'Angles at a point add to 360°, so x = 360 − 210'},
+      {id:'p4_10',type:'compare',text:'Which shape has <span class="highlight">more lines of symmetry</span>?',
+        optA:{label:'Square',emoji:'□'},optB:{label:'Rectangle',emoji:'▭'},
+        answer:'A',tip:'Compare their symmetry lines.',hint:'A square has 4 lines of symmetry; a rectangle has 2.'},
+      {id:'p4_11',type:'number',text:'How many square faces does a <b>cube</b> have?',answer:6,unit:'faces',hint:'A cube has 6 square faces'},
+      {id:'p4_12',type:'number',text:'A table shows <b>12</b>, <b>15</b> and <b>9</b> votes. What is the total?',answer:36,unit:'votes',hint:'12 + 15 + 9 = 36'},
+    ]
+  },
+  {
+    id:'test_p5_rate_volume',name:'P5 Rate, Percent & Volume',emoji:'📦',
+    desc:'Decimal conversions, percentage, rate, triangles and cuboids',difficulty:'hard',
+    questions:[
+      {id:'p5_1',type:'number',text:'Convert <b>3.5 km</b> to metres.',answer:3500,unit:'m',hint:'3.5 × 1000 = 3500 m'},
+      {id:'p5_2',type:'number',text:'Convert <b>2750 g</b> to kilograms.',answer:2.75,unit:'kg',hint:'2750 ÷ 1000 = 2.75 kg'},
+      {id:'p5_3',type:'number',text:'Find <b>15%</b> of <b>80</b>.',answer:12,unit:'',hint:'10% of 80 is 8 and 5% is 4, so total is 12'},
+      {id:'p5_4',type:'number',text:'A $50 bag has a <b>20%</b> discount. What is the sale price?',answer:40,unit:'dollars',hint:'20% of 50 = 10, and 50 − 10 = 40'},
+      {id:'p5_5',type:'number',text:'A car travels <b>180 km</b> in <b>3 h</b>. What is its speed?',answer:60,unit:'km/h',hint:'Rate = 180 ÷ 3 = 60 km/h'},
+      {id:'p5_6',type:'number',text:'A printer prints <b>6 pages/min</b> for <b>8 min</b>. How many pages?',answer:48,unit:'pages',hint:'6 × 8 = 48'},
+      {id:'p5_7',type:'number',text:'<b>2/3 × 3/4</b> = ? Enter the answer as a decimal.',answer:0.5,unit:'',hint:'2/3 × 3/4 = 6/12 = 1/2 = 0.5'},
+      {id:'p5_8',type:'number',text:'Calculate <b>2.5 + 1.75</b>.',answer:4.25,unit:'',hint:'2.50 + 1.75 = 4.25'},
+      {id:'p5_9',type:'number',text:'Find the area of a triangle with base <b>12 cm</b> and height <b>5 cm</b>.',answer:30,unit:'cm²',hint:'Area = 1/2 × 12 × 5 = 30'},
+      {id:'p5_10',type:'number',text:'A figure has a rectangle <b>8 cm × 6 cm</b> and a triangle with base <b>8 cm</b>, height <b>4 cm</b>. Find the total area.',answer:64,unit:'cm²',hint:'Rectangle area 48, triangle area 16, total 64'},
+      {id:'p5_11',type:'number',text:'Find the volume of a cuboid <b>5 cm × 4 cm × 3 cm</b>.',answer:60,unit:'cm³',hint:'Volume = 5 × 4 × 3 = 60 cm³'},
+      {id:'p5_12',type:'number',text:'A tank is <b>40 cm × 20 cm × 10 cm</b>. How many litres of water can it hold?',answer:8,unit:'ℓ',hint:'Volume = 8000 cm³ = 8000 ml = 8 ℓ'},
+      {id:'p5_13',type:'number',text:'A triangle has angles <b>50°</b>, <b>60°</b> and <b>x°</b>. Find <b>x</b>.',answer:70,unit:'°',hint:'Angles in a triangle add to 180°'},
+    ]
+  },
+  {
+    id:'test_p6_ratio_algebra',name:'P6 Ratio, Algebra & Circles',emoji:'🔷',
+    desc:'Ratio, algebra, percentage, circles, cuboids and average',difficulty:'hard',
+    questions:[
+      {id:'p6_1',type:'number',text:'A quantity is divided in the ratio <b>2 : 3</b>. If the total is <b>40</b>, what is the larger share?',answer:24,unit:'',hint:'5 parts = 40, so 1 part = 8 and 3 parts = 24'},
+      {id:'p6_2',type:'number',text:'<b>3 : 5 = 12 : x</b>. Find <b>x</b>.',answer:20,unit:'',hint:'3 is multiplied by 4 to get 12, so 5 × 4 = 20'},
+      {id:'p6_3',type:'number',text:'Evaluate <b>3a + 5</b> when <b>a = 7</b>.',answer:26,unit:'',hint:'3×7 + 5 = 21 + 5 = 26'},
+      {id:'p6_4',type:'number',text:'Solve <b>4x + 6 = 30</b>. Find <b>x</b>.',answer:6,unit:'',hint:'4x = 24, so x = 6'},
+      {id:'p6_5',type:'number',text:'Calculate <b>3/4 ÷ 1/2</b>. Enter the answer as a decimal.',answer:1.5,unit:'',hint:'3/4 ÷ 1/2 = 3/4 × 2 = 3/2 = 1.5'},
+      {id:'p6_6',type:'number',text:'A value increases from <b>80</b> to <b>100</b>. What is the percentage increase?',answer:25,unit:'%',hint:'Increase = 20, and 20/80 × 100% = 25%'},
+      {id:'p6_7',type:'number',text:'Using π = 22/7, find the circumference of a circle with radius <b>7 cm</b>.',answer:44,unit:'cm',hint:'Circumference = 2πr = 2 × 22/7 × 7 = 44'},
+      {id:'p6_8',type:'number',text:'Using π = 22/7, find the area of a circle with radius <b>7 cm</b>.',answer:154,unit:'cm²',hint:'Area = πr² = 22/7 × 7 × 7 = 154'},
+      {id:'p6_9',type:'number',text:'Using π = 22/7, find the perimeter of a semicircle with radius <b>14 cm</b>.',answer:72,unit:'cm',hint:'Half circumference = 44 cm, diameter = 28 cm, total = 72 cm'},
+      {id:'p6_10',type:'number',text:'A cuboid has volume <b>120 cm³</b>, length <b>6 cm</b> and breadth <b>5 cm</b>. Find its height.',answer:4,unit:'cm',hint:'Height = 120 ÷ (6 × 5) = 4 cm'},
+      {id:'p6_11',type:'number',text:'Find the average of <b>12</b>, <b>18</b> and <b>21</b>.',answer:17,unit:'',hint:'Total = 51, and 51 ÷ 3 = 17'},
+      {id:'p6_12',type:'number',text:'A pie chart section is <b>25%</b> of <b>80</b> pupils. How many pupils is that?',answer:20,unit:'pupils',hint:'25% is one quarter, and 80 ÷ 4 = 20'},
     ]
   }
 ];
@@ -498,7 +538,7 @@ function possessiveLabel(name){
 }
 function appBrandTitle(){
   const student=normalizeStudentName(APP.studentName);
-  return `${possessiveLabel(student||'Alya')} Weight Adventure`;
+  return `${possessiveLabel(student||'Alya')} Maths Adventure`;
 }
 function escapeHtml(v){
   return String(v??'')
@@ -1485,7 +1525,7 @@ function sHome(){
     <div class="home-title">${escapeHtml(appBrandTitle())}</div>
     <div class="home-sub">${escapeHtml(APP.studentName||'Student')} · ⭐ ${totalStars} stars</div>
   </div>
-  <div class="cheat-bar"><strong>Remember!</strong> 1 kg = 1000 g</div>
+  <div class="cheat-bar"><strong>Remember!</strong> Read the unit, then choose the right strategy.</div>
   <div class="menu-grid">
     <div class="menu-card practice" data-a="go-practice">
       <span class="menu-emoji">✏️</span>
@@ -1699,7 +1739,7 @@ function sTestResults(){
     score,total
   };
   const stars=calcAttemptStars(attempt);
-  const [emoji,msg]=pct>=90?['🏆',"Outstanding! You're a weight wizard!"]
+  const [emoji,msg]=pct>=90?['🏆',"Outstanding! You're a maths wizard!"]
     :pct>=70?['🌟','Great job! Keep it up!']
     :pct>=50?['💪','Good effort! Review and try again!']
     :['📚',"Keep practising — you'll get there!"];
@@ -1991,13 +2031,14 @@ function sAttemptDetail(){
 // SHARED: QUESTION BODY RENDERER
 // ================================================================
 function qBody(q){
+  const unit=q.unit?`<span class="unit-label">${q.unit}</span>`:'';
   if(q.type==='number')return `
     ${q.scaleWeightG!=null?`<div class="scale-wrap">${buildScale(q.scaleWeightG)}</div>`:''}
     ${q.item?`<div class="item-display"><span class="item-emoji">${q.item.emoji}</span><div class="item-name">${q.item.name}</div></div>`:''}
     <div class="q-text">${q.text}</div>
     <div class="answer-area">
       <input type="number" step="any" class="answer-input" id="qInput" placeholder="?"/>
-      <span class="unit-label">${q.unit}</span>
+      ${unit}
     </div>
     <button class="submit-btn" data-a="submit-ans">Check ✨</button>`;
   if(q.type==='compare')return `
@@ -2013,7 +2054,7 @@ function qBody(q){
         <div class="cmp-weight">${q.optB.label}</div>
       </div>
     </div>
-    <div style="text-align:center;font-size:12px;opacity:.55;margin-top:6px">💡 Convert to the same unit first!</div>`;
+    <div style="text-align:center;font-size:12px;opacity:.55;margin-top:6px">💡 ${q.tip||'Choose the option that matches the question.'}</div>`;
   return '';
 }
 
@@ -2084,11 +2125,11 @@ function checkAns(q,raw){
   return false;
 }
 function fmtAns(q){
-  if(q.type==='number')return `${q.answer} ${q.unit}`;
+  if(q.type==='number')return q.unit?`${q.answer} ${q.unit}`:String(q.answer);
   return q.answer==='A'?q.optA.label:q.optB.label;
 }
 function fmtUserAns(q,raw){
-  if(q.type==='number')return `${raw} ${q.unit}`;
+  if(q.type==='number')return q.unit?`${raw} ${q.unit}`:String(raw);
   return raw==='A'?q.optA.label:q.optB.label;
 }
 
