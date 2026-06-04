@@ -137,14 +137,24 @@ body{font-family:'Fredoka',sans-serif;background:var(--cream);
 .score-big{font-family:'Caveat',cursive;font-size:72px;font-weight:700;color:var(--plum);line-height:1}
 .score-sub{font-size:15px;opacity:.7;margin-top:4px}
 .res-emoji{font-size:58px;margin:10px 0}
-.res-msg{font-size:17px;font-weight:600;margin-bottom:8px}
-.breakdown{display:flex;gap:10px;justify-content:center;margin:10px 0}
-.chip{padding:8px 14px;border-radius:14px;font-size:14px;font-weight:600;border:2px solid var(--ink)}
-.chip.ok{background:var(--mint);color:white}.chip.no{background:var(--coral);color:white}
-.act-row{display:flex;gap:10px;margin-top:10px}
-.act-btn{flex:1;padding:13px;border:3px solid var(--ink);border-radius:16px;
-  font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;cursor:pointer;
-  box-shadow:0 4px 0 var(--ink)}
+	.res-msg{font-size:17px;font-weight:600;margin-bottom:8px}
+	.breakdown{display:flex;gap:10px;justify-content:center;margin:10px 0}
+	.chip{padding:8px 14px;border-radius:14px;font-size:14px;font-weight:600;border:2px solid var(--ink)}
+	.chip.ok{background:var(--mint);color:white}.chip.no{background:var(--coral);color:white}
+	.star-breakdown{margin-top:14px;background:var(--cream);border:2px solid var(--ink);
+	  border-radius:16px;padding:12px;text-align:left}
+	.star-break-title{font-weight:700;color:var(--plum);margin-bottom:5px;text-align:center}
+	.star-formula{background:white;border:2px solid var(--ink);border-radius:12px;
+	  padding:8px 10px;font-size:13px;font-weight:700;text-align:center;margin-bottom:10px}
+	.star-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+	.star-part{background:white;border:1px solid rgba(45,45,45,.18);border-radius:12px;padding:8px}
+	.star-label{font-size:11px;opacity:.6;font-weight:600}
+	.star-value{font-size:17px;font-weight:700;color:var(--plum);margin-top:2px}
+	.star-note{font-size:11px;opacity:.65;margin-top:2px}
+	.act-row{display:flex;gap:10px;margin-top:10px}
+	.act-btn{flex:1;padding:13px;border:3px solid var(--ink);border-radius:16px;
+	  font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;cursor:pointer;
+	  box-shadow:0 4px 0 var(--ink)}
 .act-btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--ink)}
 .act-btn.primary{background:var(--mint);color:white}.act-btn.secondary{background:white}
 
@@ -223,10 +233,13 @@ body{font-family:'Fredoka',sans-serif;background:var(--cream);
 .att-row1{display:flex;justify-content:space-between;align-items:center}
 .att-name{font-weight:700;font-size:16px}
 .att-score{font-weight:700;font-size:16px;color:var(--plum)}
-.att-row2{display:flex;justify-content:space-between;margin-top:5px;font-size:12px;opacity:.65}
-.att-view{color:var(--sky);font-weight:600}
-.score-bar{height:7px;background:#eee;border-radius:10px;margin-top:7px;
-  border:1px solid #ddd;overflow:hidden}
+	.att-row2{display:flex;justify-content:space-between;margin-top:5px;font-size:12px;opacity:.65}
+	.att-view{color:var(--sky);font-weight:600}
+	.star-mini{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:11px;font-weight:600}
+	.star-mini span{background:var(--cream);border:1px solid rgba(45,45,45,.18);
+	  border-radius:10px;padding:4px 7px}
+	.score-bar{height:7px;background:#eee;border-radius:10px;margin-top:7px;
+	  border:1px solid #ddd;overflow:hidden}
 .score-fill{height:100%;border-radius:10px;transition:width .3s}
 
 /* Tutor settings */
@@ -735,7 +748,11 @@ function attemptByRef(ref){
   if(!ref)return null;
   return allAttemptEntries(APP.testAttempts).find(x=>x.attemptRef===ref)||null;
 }
-function calcAttemptStars(attempt){
+function fmtMultiplier(n){
+  const rounded=Math.round(Number(n||1)*100)/100;
+  return `${rounded.toFixed(2).replace(/\.00$/,'').replace(/(\.\d)0$/,'$1')}x`;
+}
+function calcAttemptStarBreakdown(attempt){
   const score=Math.max(0,Number(attempt?.score||0));
   const total=Math.max(1,Number(attempt?.total||1));
   const duration=Math.max(1,Number(attempt?.duration||1));
@@ -747,18 +764,85 @@ function calcAttemptStars(attempt){
     ?Math.min(4,1+fastBonus*1.6)
     :Math.max(0.7,speedRatio);
   const difficultyMultiplier=attemptDifficultyMultiplier(attempt);
-  return Math.max(1,Math.round(score*timeMultiplier*difficultyMultiplier));
+  const preciseStars=score*timeMultiplier*difficultyMultiplier;
+  const roundedStars=Math.round(preciseStars);
+  const totalStars=Math.max(1,roundedStars);
+  const test=testById(String(attempt?.testId||''));
+  const difficulty=String(attempt?.difficulty||test?.difficulty||'easy');
+  return{
+    score,total,duration,expectedSec,
+    rawStars:score,
+    timeMultiplier,
+    difficultyMultiplier,
+    difficulty,
+    preciseStars,
+    roundedStars,
+    totalStars,
+    minimumApplied:totalStars!==roundedStars,
+  };
+}
+function calcAttemptStars(attempt){
+  return calcAttemptStarBreakdown(attempt).totalStars;
+}
+function renderStarBreakdown(attempt,{compact=false}={}){
+  const b=calcAttemptStarBreakdown(attempt);
+  const diffLabel=cap(String(b.difficulty||'easy'));
+  const formula=`${b.rawStars} raw ${b.rawStars===1?'star':'stars'} × ${fmtMultiplier(b.timeMultiplier)} speed × ${fmtMultiplier(b.difficultyMultiplier)} difficulty = ${b.totalStars} stars`;
+  const minimumNote=b.minimumApplied?'Minimum 1 star applied':'Rounded to nearest star';
+  if(compact){
+    return `<div class="star-mini">
+      <span>Raw ${b.rawStars} ⭐</span>
+      <span>Speed ${fmtMultiplier(b.timeMultiplier)}</span>
+      <span>${diffLabel} ${fmtMultiplier(b.difficultyMultiplier)}</span>
+      <span>Total ${b.totalStars} ⭐</span>
+    </div>`;
+  }
+  return `
+    <div class="star-breakdown">
+      <div class="star-break-title">⭐ Star Breakdown</div>
+      <div class="star-formula">${formula}</div>
+      <div class="star-grid">
+        <div class="star-part">
+          <div class="star-label">Raw score</div>
+          <div class="star-value">${b.rawStars} ⭐</div>
+          <div class="star-note">${b.score}/${b.total} correct</div>
+        </div>
+        <div class="star-part">
+          <div class="star-label">Speed multiplier</div>
+          <div class="star-value">${fmtMultiplier(b.timeMultiplier)}</div>
+          <div class="star-note">${fmtDur(b.duration)} vs ${fmtDur(b.expectedSec)} target</div>
+        </div>
+        <div class="star-part">
+          <div class="star-label">Difficulty multiplier</div>
+          <div class="star-value">${fmtMultiplier(b.difficultyMultiplier)}</div>
+          <div class="star-note">${diffLabel} quiz</div>
+        </div>
+        <div class="star-part">
+          <div class="star-label">Final stars</div>
+          <div class="star-value">${b.totalStars} ⭐</div>
+          <div class="star-note">${minimumNote}</div>
+        </div>
+      </div>
+    </div>`;
 }
 function computeLeaderboardRow(studentName,attempts){
   const safeAttempts=selectBestAttempts(attempts);
-  const testDetails=safeAttempts.map(a=>({
-    testName:a.testName||'Test',
-    score:Number(a.score||0),
-    total:Number(a.total||0),
-    duration:Number(a.duration||0),
-    stars:calcAttemptStars(a),
-    date:a.date||new Date().toISOString()
-  }));
+  const testDetails=safeAttempts.map(a=>{
+    const breakdown=calcAttemptStarBreakdown(a);
+    return{
+      testId:a.testId||'',
+      testName:a.testName||'Test',
+      difficulty:a.difficulty||testById(String(a.testId||''))?.difficulty||'easy',
+      score:Number(a.score||0),
+      total:Number(a.total||0),
+      duration:Math.max(1,Number(a.duration||0)),
+      stars:breakdown.totalStars,
+      rawStars:breakdown.rawStars,
+      timeMultiplier:breakdown.timeMultiplier,
+      difficultyMultiplier:breakdown.difficultyMultiplier,
+      date:a.date||new Date().toISOString()
+    };
+  });
   const totalStars=testDetails.reduce((sum,t)=>sum+(Number(t.stars)||0),0);
   return{
     studentName:studentName||'Student',
@@ -1400,14 +1484,15 @@ function sLeaderboard(){
           <span>${row.testsCompleted} tests completed</span>
           <span>${row.tests.length?fmtDate(row.tests[0].date):''}</span>
         </div>
-        ${row.tests.map(t=>`
-          <div class="sess-item" style="margin-bottom:6px">
-            <div>
-              <div class="sess-type test">📝 ${escapeHtml(t.testName)}</div>
-              <div class="sess-date">Score ${t.score}/${t.total} · ⏱ ${fmtDur(t.duration)}</div>
-            </div>
-            <div class="sess-right"><div class="sess-dur">⭐ ${t.stars}</div></div>
-          </div>`).join('')}
+	        ${row.tests.map(t=>`
+	          <div class="sess-item" style="margin-bottom:6px">
+	            <div style="flex:1;min-width:0">
+	              <div class="sess-type test">📝 ${escapeHtml(t.testName)}</div>
+	              <div class="sess-date">Score ${t.score}/${t.total} · ⏱ ${fmtDur(t.duration)}</div>
+	              ${renderStarBreakdown(t,{compact:true})}
+	            </div>
+	            <div class="sess-right"><div class="sess-dur">⭐ ${t.stars}</div></div>
+	          </div>`).join('')}
       </div>`).join('')}
 </div>`;
 }
@@ -1425,10 +1510,10 @@ function sTestHistory(){
     ?'<div class="no-data">No completed tests yet. Finish a quiz to review it here.</div>'
     :attempts.map(a=>{
       const pct=Math.round(a.score/a.total*100);
-      const col=pct>=80?'var(--mint)':pct>=50?'var(--sun)':'var(--coral)';
-      const test=testById(String(a.testId||''));
-      const stars=calcAttemptStars(a);
-      return `
+	      const col=pct>=80?'var(--mint)':pct>=50?'var(--sun)':'var(--coral)';
+	      const test=testById(String(a.testId||''));
+	      const stars=calcAttemptStars(a);
+	      return `
       <button class="att-item" style="width:100%;text-align:left" data-a="open-attempt" data-val="${escapeHtml(a.attemptRef)}">
         <div class="att-row1">
           <div class="att-name">${test?.emoji||'📝'} ${escapeHtml(a.testName||'Test')}</div>
@@ -1439,12 +1524,13 @@ function sTestHistory(){
           <span>${fmtDate(a.date)} · ⏱ ${fmtDur(a.duration)} · ⭐ ${stars}</span>
           <span class="att-view">View answers →</span>
         </div>
-        <div class="att-row2" style="margin-top:4px;opacity:.6">
-          <span>${a.isBest?'Counts toward leaderboard':'Retake kept for history'}</span>
-          <span>Attempt ${a.attemptNo}/${a.attemptsForTest}</span>
-        </div>
-      </button>`;
-    }).join('')}
+	        <div class="att-row2" style="margin-top:4px;opacity:.6">
+	          <span>${a.isBest?'Counts toward leaderboard':'Retake kept for history'}</span>
+	          <span>Attempt ${a.attemptNo}/${a.attemptsForTest}</span>
+	        </div>
+	        ${renderStarBreakdown(a,{compact:true})}
+	      </button>`;
+	    }).join('')}
 </div>`;
 }
 
@@ -1548,6 +1634,14 @@ function sTestResults(){
   const t=APP.test,obj=TESTS.find(x=>x.id===t.id);
   const score=t.answers.filter(a=>a.correct).length,total=t.questions.length;
   const pct=Math.round(score/total*100);
+  const attempt=t.completedAttempt||{
+    testId:t.id,
+    testName:obj?.name||'Test',
+    difficulty:obj?.difficulty||'easy',
+    duration:APP.sessionStart?Math.floor((Date.now()-APP.sessionStart)/1000):1,
+    score,total
+  };
+  const stars=calcAttemptStars(attempt);
   const [emoji,msg]=pct>=90?['🏆',"Outstanding! You're a weight wizard!"]
     :pct>=70?['🌟','Great job! Keep it up!']
     :pct>=50?['💪','Good effort! Review and try again!']
@@ -1559,16 +1653,17 @@ function sTestResults(){
     <div class="nav-title">Results</div>
     <div style="width:60px"></div>
   </div>
-  <div class="results-card">
-    <div class="score-big">${score}/${total}</div>
-    <div class="score-sub">${obj?.name} · ${pct}%</div>
-    <div class="res-emoji">${emoji}</div>
-    <div class="res-msg">${msg}</div>
-    <div class="breakdown">
-      <div class="chip ok">✅ ${score} correct</div>
-      <div class="chip no">❌ ${total-score} wrong</div>
-    </div>
-  </div>
+	  <div class="results-card">
+	    <div class="score-big">${score}/${total}</div>
+	    <div class="score-sub">${obj?.name} · ${pct}% · ⭐ ${stars}</div>
+	    <div class="res-emoji">${emoji}</div>
+	    <div class="res-msg">${msg}</div>
+	    <div class="breakdown">
+	      <div class="chip ok">✅ ${score} correct</div>
+	      <div class="chip no">❌ ${total-score} wrong</div>
+	    </div>
+	    ${renderStarBreakdown(attempt)}
+	  </div>
   <div class="act-row">
     <button class="act-btn secondary" data-a="go-review-test">📋 Review Answers</button>
     <button class="act-btn primary" data-a="retry-test">🔄 Try Again</button>
@@ -1692,12 +1787,13 @@ function sTutorDash(){
               <span>${fmtDate(a.date)} · ⏱ ${fmtDur(a.duration)} · ⭐ ${stars}</span>
               <span class="att-view">View answers →</span>
             </div>
-            <div class="att-row2" style="margin-top:4px;opacity:.6">
-              <span>${a.isBest?'Best result (leaderboard)':'Past retake'}</span>
-              <span>Attempt ${a.attemptNo}/${a.attemptsForTest}</span>
-            </div>
-          </div>`;
-      }).join('');
+	            <div class="att-row2" style="margin-top:4px;opacity:.6">
+	              <span>${a.isBest?'Best result (leaderboard)':'Past retake'}</span>
+	              <span>Attempt ${a.attemptNo}/${a.attemptsForTest}</span>
+	            </div>
+	            ${renderStarBreakdown(a,{compact:true})}
+	          </div>`;
+	      }).join('');
 
   }else{
     const cloudReady=cloudConfigured();
@@ -1811,11 +1907,12 @@ function sAttemptDetail(){
     <div class="score-big" style="color:${col}">${a.score}/${a.total}</div>
     <div class="score-sub">${pct}% · ⭐ ${stars}</div>
     <div class="score-sub" style="margin-top:4px;font-size:13px">${fmtDate(a.date)} · ⏱ ${fmtDur(a.duration)}</div>
-    <div class="breakdown" style="margin-top:10px">
-      <div class="chip ok">✅ ${a.score} correct</div>
-      <div class="chip no">❌ ${a.total-a.score} wrong</div>
-    </div>
-  </div>
+	    <div class="breakdown" style="margin-top:10px">
+	      <div class="chip ok">✅ ${a.score} correct</div>
+	      <div class="chip no">❌ ${a.total-a.score} wrong</div>
+	    </div>
+	    ${renderStarBreakdown(a)}
+	  </div>
   ${a.answers.map((ans,i)=>`
     <div class="rev-item ${ans.correct?'ok':'no'}">
       <div class="rev-icon">${ans.correct?'✅':'❌'}</div>
@@ -1984,10 +2081,11 @@ async function submitTest(raw){
         userAnswer:fmtUserAns(a.q,a.userAnswer),
         correct:a.correct,
         correctAnswer:fmtAns(a.q),
-        hint:a.q.hint||''
-      }))
-    };
-    const saveResult=await appendAttempt(attempt);
+	        hint:a.q.hint||''
+	      }))
+	    };
+	    APP.test.completedAttempt=attempt;
+	    const saveResult=await appendAttempt(attempt);
     await endSession({testName:obj?.name||'Test',score:`${score}/${t.questions.length}`,testId:t.id});
     if(saveResult?.reason==='kept-best'){
       toast('Best score kept for this quiz');
