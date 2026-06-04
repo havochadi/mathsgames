@@ -1221,21 +1221,22 @@ function inferPracticeVisual(q){
     const labelA=q.optA?.label||'A',labelB=q.optB?.label||'B';
     const massA=parseMassToGrams(labelA),massB=parseMassToGrams(labelB);
     const isMass=joined.includes('heavier')||joined.includes('mass')||joined.includes('weight')||massA!=null||massB!=null;
+    if(!isMass)return null;
     return{
-      type:isMass?'compare-scale':'compare',
-      title:isMass?'Picture the two objects on a balance scale':'Compare the two choices',
+      type:'compare-scale',
+      title:'Picture the two objects on a balance scale',
       left:{emoji:q.optA?.emoji||'A',label:labelA},
       right:{emoji:q.optB?.emoji||'B',label:labelB}
     };
   }
   if(joined.includes('speed')||joined.includes('rate')||joined.includes('km/h')||joined.includes('m/s'))return{type:'road',title:'Distance, speed and time are connected'};
   if(joined.includes('ratio')||/\d+\s*:\s*\d+/.test(plain))return{type:'ratio',title:'Each dot shows one ratio part'};
-  if(joined.includes('algebra')||/\b[xyabp]\b/.test(plain)&&/[=+\-]/.test(plain))return{type:'algebra',title:'Keep both sides balanced'};
+  if(joined.includes('algebra')&&plain.includes('solve')&&plain.includes('='))return{type:'algebra',title:'Keep both sides balanced'};
   if(joined.includes('circle')||joined.includes('circumference')||joined.includes('radius')||joined.includes('diameter'))return{type:'circle',title:'Circle parts: radius, diameter and edge'};
   if(joined.includes('angle')||unit==='°')return{type:'angle',title:'Angles measure a turn'};
   if(joined.includes('volume')||unit.includes('cm³')||joined.includes('cuboid')||joined.includes('cube'))return{type:'cuboid',title:'Volume fills a 3D space'};
   if(joined.includes('area')||unit.includes('cm²'))return{type:'area',title:'Area counts the squares inside'};
-  if(joined.includes('graph')||joined.includes('chart')||joined.includes('table')||joined.includes('votes')||joined.includes('average'))return{type:'graph',title:'Read the data carefully'};
+  if(joined.includes('graph')||joined.includes('chart')||joined.includes('table')||joined.includes('votes'))return{type:'graph',title:'Read the data carefully'};
   if(joined.includes('fraction')||/\d+\s*\/\s*\d+/.test(plain))return{type:'fraction',title:'Fractions show equal parts'};
   if(joined.includes('$')||joined.includes('cents')||joined.includes('dollars'))return{type:'money',title:'Use coins and notes to visualise money'};
   if(joined.includes('time')||joined.includes('hour')||joined.includes('minutes')||unit==='min'||unit==='h'||joined.includes('am')||joined.includes('pm'))return{type:'clock',title:'Use the clock to count time'};
@@ -1246,7 +1247,7 @@ function inferPracticeVisual(q){
   }
   if(joined.includes('litre')||joined.includes('millilitre')||unit==='ℓ'||unit==='ml')return{type:'jug',title:'Capacity tells how much a container holds'};
   if(joined.includes('shape')||joined.includes('triangle')||joined.includes('rectangle')||joined.includes('square')||joined.includes('sphere')||joined.includes('cone'))return{type:'shapes',title:'Look at sides, corners and faces'};
-  return{type:'blocks',title:'Break the numbers into parts'};
+  return null;
 }
 function renderQuestionVisual(q){
   const v=q.visual;
@@ -1347,11 +1348,7 @@ function renderQuestionVisual(q){
     <div class="visual-card">${title}<div class="visual-row">
       <span style="font-size:38px">△</span><span style="font-size:38px">□</span><span style="font-size:38px">○</span><span style="font-size:38px">🧊</span>
     </div></div>`;
-  return `
-    <div class="visual-card">${title}<div class="visual-row">
-      <div class="visual-choice"><span class="visual-emoji">🧱</span><div class="visual-label">break apart</div></div>
-      <div class="visual-choice"><span class="visual-emoji">🔢</span><div class="visual-label">calculate</div></div>
-    </div></div>`;
+  return '';
 }
 
 const APP={
