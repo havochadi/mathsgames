@@ -74,7 +74,8 @@ body{font-family:'Fredoka',sans-serif;background:var(--cream);
   padding:24px 20px;box-shadow:var(--shadow);margin-bottom:14px;
   position:relative;min-height:250px}
 .card-badge{position:absolute;top:-14px;left:20px;background:var(--coral);color:white;
-  padding:4px 14px;border-radius:20px;font-weight:600;font-size:13px;border:3px solid var(--ink)}
+  padding:4px 14px;border-radius:20px;font-weight:600;font-size:13px;border:3px solid var(--ink);
+  max-width:calc(100% - 40px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .q-text{text-align:center;font-size:18px;font-weight:500;line-height:1.5;margin:14px 0}
 .highlight{background:var(--sun);padding:2px 10px;border-radius:8px;font-weight:700;display:inline-block}
 .answer-area{display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 0}
@@ -114,7 +115,10 @@ body{font-family:'Fredoka',sans-serif;background:var(--cream);
 .scale-wrap{display:flex;justify-content:center;margin:8px 0;height:118px}
 
 /* ── TEST MENU ── */
-.test-grid{display:flex;flex-direction:column;gap:12px;margin-top:6px}
+.test-grid{display:flex;flex-direction:column;gap:18px;margin-top:6px}
+.test-level-block{display:flex;flex-direction:column;gap:10px}
+.test-level-title{font-family:'Caveat',cursive;font-size:28px;font-weight:700;color:var(--plum);
+  background:white;border:3px solid var(--ink);border-radius:18px;padding:8px 14px;box-shadow:0 3px 0 var(--ink)}
 .test-card{background:white;border:4px solid var(--ink);border-radius:20px;
   padding:16px;cursor:pointer;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px}
 .test-card:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink)}
@@ -130,6 +134,7 @@ body{font-family:'Fredoka',sans-serif;background:var(--cream);
 .t-bar{height:12px;background:#eee;border-radius:20px;border:2px solid var(--ink);overflow:hidden}
 .t-bar-fill{height:100%;background:var(--mint);border-radius:20px;transition:width .4s}
 .t-bar-label{display:flex;justify-content:space-between;font-size:12px;margin-top:4px;font-weight:600;opacity:.75}
+.test-live-meta{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}
 
 /* ── TEST RESULTS ── */
 .results-card{background:white;border:4px solid var(--ink);border-radius:24px;
@@ -303,127 +308,304 @@ const ITEMS=[
 //   or for compare: { ..., optA:{label,emoji}, optB:{...}, answer:'A'|'B' }
 // ================================================================
 const TESTS=[
-  {
-    id:'test_p1_foundations',name:'P1 Foundations',emoji:'🌱',
-    desc:'Numbers, money, length, time, shapes and picture graphs',difficulty:'easy',
-    questions:[
-      {id:'p1_1',type:'number',text:'What number is <b>4 tens</b> and <b>7 ones</b>?',answer:47,unit:'',hint:'4 tens = 40, and 40 + 7 = 47'},
-      {id:'p1_2',type:'number',text:'Calculate <b>28 + 15</b>.',answer:43,unit:'',hint:'28 + 10 + 5 = 43'},
-      {id:'p1_3',type:'number',text:'Calculate <b>64 − 29</b>.',answer:35,unit:'',hint:'64 − 30 + 1 = 35'},
-      {id:'p1_4',type:'number',text:'There are <b>6</b> bags with <b>4</b> marbles each. How many marbles?',answer:24,unit:'',hint:'6 × 4 = 24'},
-      {id:'p1_5',type:'number',text:'<b>18</b> stickers are shared equally among <b>3</b> children. How many each?',answer:6,unit:'',hint:'18 ÷ 3 = 6'},
-      {id:'p1_6',type:'number',text:'<b>75 cents</b> + <b>25 cents</b> = how many cents?',answer:100,unit:'cents',hint:'75 + 25 = 100 cents'},
-      {id:'p1_7',type:'number',text:'A ribbon is <b>12 cm</b>. Another ribbon is <b>5 cm</b> longer. What is its length?',answer:17,unit:'cm',hint:'12 + 5 = 17 cm'},
-      {id:'p1_8',type:'number',text:'How many minutes are there in <b>half an hour</b>?',answer:30,unit:'min',hint:'Half of 60 minutes is 30 minutes'},
-      {id:'p1_9',type:'compare',text:'Which shape has <span class="highlight">no corners</span>?',
-        optA:{label:'Circle',emoji:'○'},optB:{label:'Square',emoji:'□'},
-        answer:'A',tip:'Look at the sides and corners.',hint:'A circle has no corners.'},
-      {id:'p1_10',type:'number',text:'A picture graph shows <b>5</b> apple pictures. Each picture stands for <b>2</b> apples. How many apples?',answer:10,unit:'apples',hint:'5 × 2 = 10 apples'},
-    ]
-  },
-  {
-    id:'test_p2_builders',name:'P2 Builders',emoji:'🧱',
-    desc:'Numbers to 1000, fractions, money, mass, volume and 3D shapes',difficulty:'easy',
-    questions:[
-      {id:'p2_1',type:'number',text:'What number is <b>6 hundreds</b>, <b>3 tens</b> and <b>8 ones</b>?',answer:638,unit:'',hint:'600 + 30 + 8 = 638'},
-      {id:'p2_2',type:'number',text:'Calculate <b>347 + 256</b>.',answer:603,unit:'',hint:'347 + 200 + 50 + 6 = 603'},
-      {id:'p2_3',type:'number',text:'Calculate <b>8 × 5</b>.',answer:40,unit:'',hint:'8 groups of 5 make 40'},
-      {id:'p2_4',type:'number',text:'Calculate <b>36 ÷ 4</b>.',answer:9,unit:'',hint:'4 × 9 = 36'},
-      {id:'p2_5',type:'number',text:'<b>3/8 + 2/8</b> = ?/8. Enter the missing numerator.',answer:5,unit:'',hint:'3 eighths + 2 eighths = 5 eighths'},
-      {id:'p2_6',type:'number',text:'How many cents is <b>$3.25</b>?',answer:325,unit:'cents',hint:'$3.25 = 300 cents + 25 cents'},
-      {id:'p2_7',type:'compare',text:'Which mass is heavier?',
-        optA:{label:'2 kg',emoji:'📦'},optB:{label:'1500 g',emoji:'📦'},
-        answer:'A',tip:'Convert to the same unit first.',hint:'2 kg = 2000 g, which is heavier than 1500 g'},
-      {id:'p2_8',type:'number',text:'A jug has <b>3 ℓ</b> of water. Another has <b>2 ℓ</b>. How many litres altogether?',answer:5,unit:'ℓ',hint:'3 + 2 = 5 ℓ'},
-      {id:'p2_9',type:'number',text:'Convert <b>2 h 15 min</b> to minutes.',answer:135,unit:'min',hint:'2 h = 120 min, and 120 + 15 = 135'},
-      {id:'p2_10',type:'compare',text:'Which solid has <span class="highlight">6 square faces</span>?',
-        optA:{label:'Cube',emoji:'🧊'},optB:{label:'Cone',emoji:'🍦'},
-        answer:'A',tip:'Think about faces of 3D shapes.',hint:'A cube has 6 square faces.'},
-      {id:'p2_11',type:'number',text:'A picture graph has <b>4</b> symbols. Each symbol represents <b>5</b> pupils. How many pupils?',answer:20,unit:'pupils',hint:'4 × 5 = 20 pupils'},
-    ]
-  },
-  {
-    id:'test_p3_measurement',name:'P3 Measurement & Graphs',emoji:'📏',
-    desc:'Compound units, area, perimeter, angles, time and bar graphs',difficulty:'medium',
-    questions:[
-      {id:'p3_1',type:'number',text:'Calculate <b>8000 + 1700</b>.',answer:9700,unit:'',hint:'8000 + 1700 = 9700'},
-      {id:'p3_2',type:'number',text:'Calculate <b>248 × 3</b>.',answer:744,unit:'',hint:'200×3 + 40×3 + 8×3 = 744'},
-      {id:'p3_3',type:'number',text:'<b>2/3 = ?/12</b>. Enter the missing numerator.',answer:8,unit:'',hint:'3 × 4 = 12, so 2 × 4 = 8'},
-      {id:'p3_4',type:'number',text:'Calculate <b>$12.50 − $7.35</b>.',answer:5.15,unit:'dollars',hint:'12.50 − 7.35 = 5.15'},
-      {id:'p3_5',type:'number',text:'Convert <b>3 km 250 m</b> to metres.',answer:3250,unit:'m',hint:'3 km = 3000 m, and 3000 + 250 = 3250'},
-      {id:'p3_6',type:'number',text:'Convert <b>2 kg 450 g</b> to grams.',answer:2450,unit:'g',hint:'2 kg = 2000 g, and 2000 + 450 = 2450'},
-      {id:'p3_7',type:'number',text:'Convert <b>4 ℓ 300 ml</b> to millilitres.',answer:4300,unit:'ml',hint:'4 ℓ = 4000 ml, and 4000 + 300 = 4300'},
-      {id:'p3_8',type:'number',text:'A lesson starts at <b>2:45 pm</b> and ends at <b>3:20 pm</b>. What is the duration?',answer:35,unit:'min',hint:'2:45 to 3:00 is 15 min, then 20 min more'},
-      {id:'p3_9',type:'number',text:'Find the area of a rectangle with length <b>8 cm</b> and breadth <b>6 cm</b>.',answer:48,unit:'cm²',hint:'Area = 8 × 6 = 48 cm²'},
-      {id:'p3_10',type:'number',text:'Find the perimeter of a rectangle with length <b>12 cm</b> and breadth <b>5 cm</b>.',answer:34,unit:'cm',hint:'Perimeter = 12 + 5 + 12 + 5 = 34 cm'},
-      {id:'p3_11',type:'compare',text:'Which angle is <span class="highlight">greater than a right angle</span>?',
-        optA:{label:'120°',emoji:'∠'},optB:{label:'90°',emoji:'∟'},
-        answer:'A',tip:'A right angle is 90°.',hint:'120° is greater than 90°.'},
-      {id:'p3_12',type:'number',text:'A bar graph shows Class A has <b>18</b> pupils and Class B has <b>24</b>. How many more pupils are in Class B?',answer:6,unit:'pupils',hint:'24 − 18 = 6'},
-    ]
-  },
-  {
-    id:'test_p4_decimals_geometry',name:'P4 Decimals & Geometry',emoji:'🧭',
-    desc:'Factors, multiples, fractions, decimals, symmetry, nets and data',difficulty:'medium',
-    questions:[
-      {id:'p4_1',type:'number',text:'Round <b>47 628</b> to the nearest <b>1000</b>.',answer:48000,unit:'',hint:'47 628 is closer to 48 000 than 47 000'},
-      {id:'p4_2',type:'number',text:'What is the <b>greatest common factor</b> of <b>12</b> and <b>18</b>?',answer:6,unit:'',hint:'Common factors are 1, 2, 3 and 6'},
-      {id:'p4_3',type:'number',text:'What is the <b>lowest common multiple</b> of <b>4</b> and <b>6</b>?',answer:12,unit:'',hint:'12 is the first common multiple'},
-      {id:'p4_4',type:'number',text:'<b>3/4 − 1/6 = ?/12</b>. Enter the missing numerator.',answer:7,unit:'',hint:'3/4 = 9/12 and 1/6 = 2/12, so 9/12 − 2/12 = 7/12'},
-      {id:'p4_5',type:'number',text:'What is the value of the digit <b>7</b> in <b>3.708</b>?',answer:0.7,unit:'',hint:'7 is in the tenths place'},
-      {id:'p4_6',type:'number',text:'Calculate <b>4.25 + 3.6</b>.',answer:7.85,unit:'',hint:'4.25 + 3.60 = 7.85'},
-      {id:'p4_7',type:'number',text:'Calculate <b>6.4 × 3</b>.',answer:19.2,unit:'',hint:'64 × 3 = 192, so 6.4 × 3 = 19.2'},
-      {id:'p4_8',type:'number',text:'A composite figure is made from rectangles <b>10 cm × 4 cm</b> and <b>6 cm × 3 cm</b>. Find the total area.',answer:58,unit:'cm²',hint:'10×4 + 6×3 = 40 + 18 = 58'},
-      {id:'p4_9',type:'number',text:'Angles at a point are <b>90°</b>, <b>120°</b> and <b>x°</b>. Find <b>x</b>.',answer:150,unit:'°',hint:'Angles at a point add to 360°, so x = 360 − 210'},
-      {id:'p4_10',type:'compare',text:'Which shape has <span class="highlight">more lines of symmetry</span>?',
-        optA:{label:'Square',emoji:'□'},optB:{label:'Rectangle',emoji:'▭'},
-        answer:'A',tip:'Compare their symmetry lines.',hint:'A square has 4 lines of symmetry; a rectangle has 2.'},
-      {id:'p4_11',type:'number',text:'How many square faces does a <b>cube</b> have?',answer:6,unit:'faces',hint:'A cube has 6 square faces'},
-      {id:'p4_12',type:'number',text:'A table shows <b>12</b>, <b>15</b> and <b>9</b> votes. What is the total?',answer:36,unit:'votes',hint:'12 + 15 + 9 = 36'},
-    ]
-  },
-  {
-    id:'test_p5_rate_volume',name:'P5 Rate, Percent & Volume',emoji:'📦',
-    desc:'Decimal conversions, percentage, rate, triangles and cuboids',difficulty:'hard',
-    questions:[
-      {id:'p5_1',type:'number',text:'Convert <b>3.5 km</b> to metres.',answer:3500,unit:'m',hint:'3.5 × 1000 = 3500 m'},
-      {id:'p5_2',type:'number',text:'Convert <b>2750 g</b> to kilograms.',answer:2.75,unit:'kg',hint:'2750 ÷ 1000 = 2.75 kg'},
-      {id:'p5_3',type:'number',text:'Find <b>15%</b> of <b>80</b>.',answer:12,unit:'',hint:'10% of 80 is 8 and 5% is 4, so total is 12'},
-      {id:'p5_4',type:'number',text:'A $50 bag has a <b>20%</b> discount. What is the sale price?',answer:40,unit:'dollars',hint:'20% of 50 = 10, and 50 − 10 = 40'},
-      {id:'p5_5',type:'number',text:'A car travels <b>180 km</b> in <b>3 h</b>. What is its speed?',answer:60,unit:'km/h',hint:'Rate = 180 ÷ 3 = 60 km/h'},
-      {id:'p5_6',type:'number',text:'A printer prints <b>6 pages/min</b> for <b>8 min</b>. How many pages?',answer:48,unit:'pages',hint:'6 × 8 = 48'},
-      {id:'p5_7',type:'number',text:'<b>2/3 × 3/4</b> = ? Enter the answer as a decimal.',answer:0.5,unit:'',hint:'2/3 × 3/4 = 6/12 = 1/2 = 0.5'},
-      {id:'p5_8',type:'number',text:'Calculate <b>2.5 + 1.75</b>.',answer:4.25,unit:'',hint:'2.50 + 1.75 = 4.25'},
-      {id:'p5_9',type:'number',text:'Find the area of a triangle with base <b>12 cm</b> and height <b>5 cm</b>.',answer:30,unit:'cm²',hint:'Area = 1/2 × 12 × 5 = 30'},
-      {id:'p5_10',type:'number',text:'A figure has a rectangle <b>8 cm × 6 cm</b> and a triangle with base <b>8 cm</b>, height <b>4 cm</b>. Find the total area.',answer:64,unit:'cm²',hint:'Rectangle area 48, triangle area 16, total 64'},
-      {id:'p5_11',type:'number',text:'Find the volume of a cuboid <b>5 cm × 4 cm × 3 cm</b>.',answer:60,unit:'cm³',hint:'Volume = 5 × 4 × 3 = 60 cm³'},
-      {id:'p5_12',type:'number',text:'A tank is <b>40 cm × 20 cm × 10 cm</b>. How many litres of water can it hold?',answer:8,unit:'ℓ',hint:'Volume = 8000 cm³ = 8000 ml = 8 ℓ'},
-      {id:'p5_13',type:'number',text:'A triangle has angles <b>50°</b>, <b>60°</b> and <b>x°</b>. Find <b>x</b>.',answer:70,unit:'°',hint:'Angles in a triangle add to 180°'},
-    ]
-  },
-  {
-    id:'test_p6_ratio_algebra',name:'P6 Ratio, Algebra & Circles',emoji:'🔷',
-    desc:'Ratio, algebra, percentage, circles, cuboids and average',difficulty:'hard',
-    questions:[
-      {id:'p6_1',type:'number',text:'A quantity is divided in the ratio <b>2 : 3</b>. If the total is <b>40</b>, what is the larger share?',answer:24,unit:'',hint:'5 parts = 40, so 1 part = 8 and 3 parts = 24'},
-      {id:'p6_2',type:'number',text:'<b>3 : 5 = 12 : x</b>. Find <b>x</b>.',answer:20,unit:'',hint:'3 is multiplied by 4 to get 12, so 5 × 4 = 20'},
-      {id:'p6_3',type:'number',text:'Evaluate <b>3a + 5</b> when <b>a = 7</b>.',answer:26,unit:'',hint:'3×7 + 5 = 21 + 5 = 26'},
-      {id:'p6_4',type:'number',text:'Solve <b>4x + 6 = 30</b>. Find <b>x</b>.',answer:6,unit:'',hint:'4x = 24, so x = 6'},
-      {id:'p6_5',type:'number',text:'Calculate <b>3/4 ÷ 1/2</b>. Enter the answer as a decimal.',answer:1.5,unit:'',hint:'3/4 ÷ 1/2 = 3/4 × 2 = 3/2 = 1.5'},
-      {id:'p6_6',type:'number',text:'A value increases from <b>80</b> to <b>100</b>. What is the percentage increase?',answer:25,unit:'%',hint:'Increase = 20, and 20/80 × 100% = 25%'},
-      {id:'p6_7',type:'number',text:'Using π = 22/7, find the circumference of a circle with radius <b>7 cm</b>.',answer:44,unit:'cm',hint:'Circumference = 2πr = 2 × 22/7 × 7 = 44'},
-      {id:'p6_8',type:'number',text:'Using π = 22/7, find the area of a circle with radius <b>7 cm</b>.',answer:154,unit:'cm²',hint:'Area = πr² = 22/7 × 7 × 7 = 154'},
-      {id:'p6_9',type:'number',text:'Using π = 22/7, find the perimeter of a semicircle with radius <b>14 cm</b>.',answer:72,unit:'cm',hint:'Half circumference = 44 cm, diameter = 28 cm, total = 72 cm'},
-      {id:'p6_10',type:'number',text:'A cuboid has volume <b>120 cm³</b>, length <b>6 cm</b> and breadth <b>5 cm</b>. Find its height.',answer:4,unit:'cm',hint:'Height = 120 ÷ (6 × 5) = 4 cm'},
-      {id:'p6_11',type:'number',text:'Find the average of <b>12</b>, <b>18</b> and <b>21</b>.',answer:17,unit:'',hint:'Total = 51, and 51 ÷ 3 = 17'},
-      {id:'p6_12',type:'number',text:'A pie chart section is <b>25%</b> of <b>80</b> pupils. How many pupils is that?',answer:20,unit:'pupils',hint:'25% is one quarter, and 80 ÷ 4 = 20'},
-    ]
-  }
+  {id:'test_p1_numbers',level:1,name:'P1 Numbers',emoji:'🔢',desc:'Counting, place value and ordering within 100',difficulty:'easy',questions:[
+    {id:'p1num1',type:'number',text:'What number is <b>4 tens</b> and <b>7 ones</b>?',answer:47,unit:'',hint:'4 tens = 40, and 40 + 7 = 47'},
+    {id:'p1num2',type:'number',text:'Which number is greater: <b>58</b> or <b>85</b>? Enter the greater number.',answer:85,unit:'',hint:'85 has 8 tens, which is more than 5 tens'},
+    {id:'p1num3',type:'number',text:'What is <b>10 more</b> than <b>63</b>?',answer:73,unit:'',hint:'Adding 10 increases the tens digit by 1'},
+  ]},
+  {id:'test_p1_add_subtract',level:1,name:'P1 Addition & Subtraction',emoji:'➕',desc:'Adding and subtracting within 100',difficulty:'easy',questions:[
+    {id:'p1as1',type:'number',text:'Calculate <b>28 + 15</b>.',answer:43,unit:'',hint:'28 + 10 + 5 = 43'},
+    {id:'p1as2',type:'number',text:'Calculate <b>64 − 29</b>.',answer:35,unit:'',hint:'64 − 30 + 1 = 35'},
+    {id:'p1as3',type:'number',text:'There are <b>36</b> balloons. <b>9</b> fly away. How many are left?',answer:27,unit:'balloons',hint:'36 − 9 = 27'},
+  ]},
+  {id:'test_p1_multiplication_division',level:1,name:'P1 Groups & Sharing',emoji:'✖️',desc:'Equal groups, repeated addition and sharing',difficulty:'easy',questions:[
+    {id:'p1md1',type:'number',text:'There are <b>6</b> bags with <b>4</b> marbles each. How many marbles?',answer:24,unit:'marbles',hint:'6 groups of 4 = 24'},
+    {id:'p1md2',type:'number',text:'<b>18</b> stickers are shared equally among <b>3</b> children. How many each?',answer:6,unit:'stickers',hint:'18 ÷ 3 = 6'},
+    {id:'p1md3',type:'number',text:'Count by 5s: <b>5, 10, 15, ?</b>',answer:20,unit:'',hint:'Add another 5'},
+  ]},
+  {id:'test_p1_money',level:1,name:'P1 Money',emoji:'💰',desc:'Counting cents, dollars and simple change',difficulty:'easy',questions:[
+    {id:'p1money1',type:'number',text:'<b>75 cents</b> + <b>25 cents</b> = how many cents?',answer:100,unit:'cents',hint:'75 + 25 = 100 cents'},
+    {id:'p1money2',type:'number',text:'A toy costs <b>60 cents</b>. You pay <b>$1</b>. How many cents change?',answer:40,unit:'cents',hint:'$1 = 100 cents, and 100 − 60 = 40'},
+    {id:'p1money3',type:'number',text:'How many dollars are <b>3</b> ten-dollar notes and <b>4</b> one-dollar coins?',answer:34,unit:'dollars',hint:'30 + 4 = 34'},
+  ]},
+  {id:'test_p1_length',level:1,name:'P1 Length',emoji:'📏',desc:'Comparing and adding lengths in centimetres',difficulty:'easy',questions:[
+    {id:'p1len1',type:'number',text:'A ribbon is <b>12 cm</b>. Another ribbon is <b>5 cm</b> longer. What is its length?',answer:17,unit:'cm',hint:'12 + 5 = 17 cm'},
+    {id:'p1len2',type:'number',text:'A pencil is <b>15 cm</b>. An eraser is <b>6 cm</b>. How much longer is the pencil?',answer:9,unit:'cm',hint:'15 − 6 = 9 cm'},
+    {id:'p1len3',type:'compare',text:'Which is <span class="highlight">shorter</span>?',optA:{label:'8 cm',emoji:'📏'},optB:{label:'13 cm',emoji:'📏'},answer:'A',tip:'Compare the numbers.',hint:'8 cm is shorter than 13 cm.'},
+  ]},
+  {id:'test_p1_time',level:1,name:'P1 Time',emoji:'⏰',desc:'Telling time and simple duration',difficulty:'easy',questions:[
+    {id:'p1time1',type:'number',text:'How many minutes are there in <b>half an hour</b>?',answer:30,unit:'min',hint:'Half of 60 minutes is 30 minutes'},
+    {id:'p1time2',type:'number',text:'A show starts at <b>3:00 pm</b> and ends at <b>4:00 pm</b>. How many hours long is it?',answer:1,unit:'h',hint:'4:00 pm is 1 hour after 3:00 pm'},
+    {id:'p1time3',type:'number',text:'What time is <b>1 hour after 7:00</b>? Enter the hour only.',answer:8,unit:'o’clock',hint:'7:00 plus 1 hour is 8:00'},
+  ]},
+  {id:'test_p1_shapes',level:1,name:'P1 Shapes',emoji:'🔵',desc:'Recognising 2D shapes and their properties',difficulty:'easy',questions:[
+    {id:'p1shape1',type:'compare',text:'Which shape has <span class="highlight">no corners</span>?',optA:{label:'Circle',emoji:'○'},optB:{label:'Square',emoji:'□'},answer:'A',tip:'Look at the sides and corners.',hint:'A circle has no corners.'},
+    {id:'p1shape2',type:'number',text:'How many sides does a <b>triangle</b> have?',answer:3,unit:'sides',hint:'A triangle has 3 sides'},
+    {id:'p1shape3',type:'number',text:'How many corners does a <b>rectangle</b> have?',answer:4,unit:'corners',hint:'A rectangle has 4 corners'},
+  ]},
+  {id:'test_p1_picture_graphs',level:1,name:'P1 Picture Graphs',emoji:'📊',desc:'Reading simple picture graphs',difficulty:'easy',questions:[
+    {id:'p1graph1',type:'number',text:'A picture graph shows <b>5</b> apple pictures. Each picture stands for <b>2</b> apples. How many apples?',answer:10,unit:'apples',hint:'5 × 2 = 10 apples'},
+    {id:'p1graph2',type:'number',text:'A picture graph shows <b>7</b> stars. Each star stands for <b>1</b> point. How many points?',answer:7,unit:'points',hint:'7 × 1 = 7'},
+    {id:'p1graph3',type:'number',text:'Ali has <b>6</b> votes and Mei has <b>9</b> votes. How many more votes does Mei have?',answer:3,unit:'votes',hint:'9 − 6 = 3'},
+  ]},
+
+  {id:'test_p2_numbers',level:2,name:'P2 Numbers to 1000',emoji:'🧱',desc:'Place value, comparing and ordering numbers to 1000',difficulty:'easy',questions:[
+    {id:'p2num1',type:'number',text:'What number is <b>6 hundreds</b>, <b>3 tens</b> and <b>8 ones</b>?',answer:638,unit:'',hint:'600 + 30 + 8 = 638'},
+    {id:'p2num2',type:'number',text:'Calculate <b>347 + 256</b>.',answer:603,unit:'',hint:'347 + 200 + 50 + 6 = 603'},
+    {id:'p2num3',type:'number',text:'What is the next even number after <b>128</b>?',answer:130,unit:'',hint:'Even numbers go up by 2'},
+  ]},
+  {id:'test_p2_multiplication_division',level:2,name:'P2 Multiplication & Division',emoji:'✖️',desc:'Multiplication tables and related division facts',difficulty:'easy',questions:[
+    {id:'p2md1',type:'number',text:'Calculate <b>8 × 5</b>.',answer:40,unit:'',hint:'8 groups of 5 make 40'},
+    {id:'p2md2',type:'number',text:'Calculate <b>36 ÷ 4</b>.',answer:9,unit:'',hint:'4 × 9 = 36'},
+    {id:'p2md3',type:'number',text:'There are <b>7</b> plates with <b>3</b> cakes each. How many cakes?',answer:21,unit:'cakes',hint:'7 × 3 = 21'},
+  ]},
+  {id:'test_p2_fractions',level:2,name:'P2 Fractions',emoji:'🍕',desc:'Like fractions and simple fraction operations',difficulty:'easy',questions:[
+    {id:'p2frac1',type:'number',text:'<b>3/8 + 2/8</b> = ?/8. Enter the missing numerator.',answer:5,unit:'',hint:'3 eighths + 2 eighths = 5 eighths'},
+    {id:'p2frac2',type:'number',text:'<b>7/10 − 4/10</b> = ?/10. Enter the missing numerator.',answer:3,unit:'',hint:'7 tenths − 4 tenths = 3 tenths'},
+    {id:'p2frac3',type:'compare',text:'Which fraction is larger?',optA:{label:'3/4',emoji:'🍕'},optB:{label:'1/4',emoji:'🍕'},answer:'A',tip:'The denominators are the same.',hint:'3 quarters is more than 1 quarter.'},
+  ]},
+  {id:'test_p2_money',level:2,name:'P2 Money',emoji:'🪙',desc:'Dollars, cents and money word problems',difficulty:'easy',questions:[
+    {id:'p2money1',type:'number',text:'How many cents is <b>$3.25</b>?',answer:325,unit:'cents',hint:'$3.25 = 300 cents + 25 cents'},
+    {id:'p2money2',type:'number',text:'Which is more: <b>$4.20</b> or <b>390 cents</b>? Enter the larger amount in cents.',answer:420,unit:'cents',hint:'$4.20 = 420 cents, which is more than 390 cents'},
+    {id:'p2money3',type:'number',text:'A book costs <b>$6.80</b>. You pay <b>$10</b>. How much change?',answer:3.2,unit:'dollars',hint:'10.00 − 6.80 = 3.20'},
+  ]},
+  {id:'test_p2_length',level:2,name:'P2 Length',emoji:'📏',desc:'Metres, centimetres and total length',difficulty:'easy',questions:[
+    {id:'p2len1',type:'number',text:'A rope is <b>4 m</b> long. Another rope is <b>3 m</b> long. What is the total length?',answer:7,unit:'m',hint:'4 + 3 = 7 m'},
+    {id:'p2len2',type:'number',text:'Convert <b>2 m</b> to centimetres.',answer:200,unit:'cm',hint:'1 m = 100 cm, so 2 m = 200 cm'},
+    {id:'p2len3',type:'number',text:'A line is <b>90 cm</b>. Another line is <b>35 cm</b> shorter. How long is it?',answer:55,unit:'cm',hint:'90 − 35 = 55 cm'},
+  ]},
+  {id:'test_p2_mass',level:2,name:'P2 Mass',emoji:'⚖️',desc:'Kilograms, grams and comparing masses',difficulty:'easy',questions:[
+    {id:'p2mass1',type:'compare',text:'Which mass is heavier?',optA:{label:'2 kg',emoji:'📦'},optB:{label:'1500 g',emoji:'📦'},answer:'A',tip:'Convert to the same unit first.',hint:'2 kg = 2000 g, which is heavier than 1500 g'},
+    {id:'p2mass2',type:'number',text:'Convert <b>3 kg</b> to grams.',answer:3000,unit:'g',hint:'1 kg = 1000 g, so 3 kg = 3000 g'},
+    {id:'p2mass3',type:'number',text:'A bag is <b>850 g</b>. Another bag is <b>150 g</b>. What is their total mass?',answer:1000,unit:'g',hint:'850 + 150 = 1000 g'},
+  ]},
+  {id:'test_p2_volume',level:2,name:'P2 Volume',emoji:'🥤',desc:'Litres and simple capacity problems',difficulty:'easy',questions:[
+    {id:'p2vol1',type:'number',text:'A jug has <b>3 ℓ</b> of water. Another has <b>2 ℓ</b>. How many litres altogether?',answer:5,unit:'ℓ',hint:'3 + 2 = 5 ℓ'},
+    {id:'p2vol2',type:'number',text:'A bottle holds <b>1 ℓ</b>. How many millilitres is that?',answer:1000,unit:'ml',hint:'1 ℓ = 1000 ml'},
+    {id:'p2vol3',type:'number',text:'A pail has <b>9 ℓ</b>. <b>4 ℓ</b> is poured away. How much is left?',answer:5,unit:'ℓ',hint:'9 − 4 = 5 ℓ'},
+  ]},
+  {id:'test_p2_time',level:2,name:'P2 Time',emoji:'🕒',desc:'Hours, minutes and duration',difficulty:'easy',questions:[
+    {id:'p2time1',type:'number',text:'Convert <b>2 h 15 min</b> to minutes.',answer:135,unit:'min',hint:'2 h = 120 min, and 120 + 15 = 135'},
+    {id:'p2time2',type:'number',text:'A lesson starts at <b>9:30 am</b> and ends at <b>10:00 am</b>. How many minutes?',answer:30,unit:'min',hint:'9:30 to 10:00 is 30 minutes'},
+    {id:'p2time3',type:'number',text:'How many minutes are there in <b>3 hours</b>?',answer:180,unit:'min',hint:'3 × 60 = 180'},
+  ]},
+  {id:'test_p2_geometry',level:2,name:'P2 2D & 3D Shapes',emoji:'🧊',desc:'Solid shapes, flat faces and patterns',difficulty:'easy',questions:[
+    {id:'p2geo1',type:'compare',text:'Which solid has <span class="highlight">6 square faces</span>?',optA:{label:'Cube',emoji:'🧊'},optB:{label:'Cone',emoji:'🍦'},answer:'A',tip:'Think about faces of 3D shapes.',hint:'A cube has 6 square faces.'},
+    {id:'p2geo2',type:'number',text:'How many flat faces does a <b>cuboid</b> have?',answer:6,unit:'faces',hint:'A cuboid has 6 faces'},
+    {id:'p2geo3',type:'compare',text:'Which 3D shape has <span class="highlight">one curved surface</span> and no flat faces?',optA:{label:'Sphere',emoji:'⚽'},optB:{label:'Cube',emoji:'🧊'},answer:'A',tip:'Think about rolling shapes.',hint:'A sphere has one curved surface and no flat faces.'},
+  ]},
+  {id:'test_p2_picture_graphs',level:2,name:'P2 Picture Graphs',emoji:'📊',desc:'Scaled picture graphs',difficulty:'easy',questions:[
+    {id:'p2graph1',type:'number',text:'A picture graph has <b>4</b> symbols. Each symbol represents <b>5</b> pupils. How many pupils?',answer:20,unit:'pupils',hint:'4 × 5 = 20 pupils'},
+    {id:'p2graph2',type:'number',text:'A graph has <b>6</b> fish pictures. Each picture means <b>2</b> fish. How many fish?',answer:12,unit:'fish',hint:'6 × 2 = 12'},
+    {id:'p2graph3',type:'number',text:'Class A has <b>18</b> votes and Class B has <b>12</b>. How many fewer votes does Class B have?',answer:6,unit:'votes',hint:'18 − 12 = 6'},
+  ]},
+
+  {id:'test_p3_whole_numbers',level:3,name:'P3 Whole Numbers',emoji:'🔢',desc:'Numbers to 10 000 and written algorithms',difficulty:'medium',questions:[
+    {id:'p3wn1',type:'number',text:'Calculate <b>8000 + 1700</b>.',answer:9700,unit:'',hint:'8000 + 1700 = 9700'},
+    {id:'p3wn2',type:'number',text:'Calculate <b>248 × 3</b>.',answer:744,unit:'',hint:'200×3 + 40×3 + 8×3 = 744'},
+    {id:'p3wn3',type:'number',text:'Calculate <b>936 ÷ 3</b>.',answer:312,unit:'',hint:'900÷3 = 300 and 36÷3 = 12'},
+  ]},
+  {id:'test_p3_fractions',level:3,name:'P3 Fractions',emoji:'🍰',desc:'Equivalent fractions and fraction operations',difficulty:'medium',questions:[
+    {id:'p3frac1',type:'number',text:'<b>2/3 = ?/12</b>. Enter the missing numerator.',answer:8,unit:'',hint:'3 × 4 = 12, so 2 × 4 = 8'},
+    {id:'p3frac2',type:'number',text:'<b>5/6 − 1/6</b> = ?/6. Enter the missing numerator.',answer:4,unit:'',hint:'5 sixths − 1 sixth = 4 sixths'},
+    {id:'p3frac3',type:'compare',text:'Which fraction is equivalent to <b>1/2</b>?',optA:{label:'3/6',emoji:'🍰'},optB:{label:'2/5',emoji:'🍰'},answer:'A',tip:'Equivalent fractions have the same value.',hint:'3/6 simplifies to 1/2.'},
+  ]},
+  {id:'test_p3_money',level:3,name:'P3 Money',emoji:'💵',desc:'Money operations and word problems',difficulty:'medium',questions:[
+    {id:'p3money1',type:'number',text:'Calculate <b>$12.50 − $7.35</b>.',answer:5.15,unit:'dollars',hint:'12.50 − 7.35 = 5.15'},
+    {id:'p3money2',type:'number',text:'Three notebooks cost <b>$2.40</b> each. What is the total cost?',answer:7.2,unit:'dollars',hint:'2.40 × 3 = 7.20'},
+    {id:'p3money3',type:'number',text:'A meal costs <b>$18.60</b>. You pay <b>$20</b>. How much change?',answer:1.4,unit:'dollars',hint:'20.00 − 18.60 = 1.40'},
+  ]},
+  {id:'test_p3_length_mass_volume',level:3,name:'P3 Length, Mass & Volume',emoji:'📏',desc:'Compound units for length, mass and volume',difficulty:'medium',questions:[
+    {id:'p3lmv1',type:'number',text:'Convert <b>3 km 250 m</b> to metres.',answer:3250,unit:'m',hint:'3 km = 3000 m, and 3000 + 250 = 3250'},
+    {id:'p3lmv2',type:'number',text:'Convert <b>2 kg 450 g</b> to grams.',answer:2450,unit:'g',hint:'2 kg = 2000 g, and 2000 + 450 = 2450'},
+    {id:'p3lmv3',type:'number',text:'Convert <b>4 ℓ 300 ml</b> to millilitres.',answer:4300,unit:'ml',hint:'4 ℓ = 4000 ml, and 4000 + 300 = 4300'},
+  ]},
+  {id:'test_p3_time',level:3,name:'P3 Time',emoji:'⏱️',desc:'Duration and time intervals',difficulty:'medium',questions:[
+    {id:'p3time1',type:'number',text:'A lesson starts at <b>2:45 pm</b> and ends at <b>3:20 pm</b>. What is the duration?',answer:35,unit:'min',hint:'2:45 to 3:00 is 15 min, then 20 min more'},
+    {id:'p3time2',type:'number',text:'A train ride takes <b>1 h 25 min</b>. How many minutes is that?',answer:85,unit:'min',hint:'60 + 25 = 85'},
+    {id:'p3time3',type:'number',text:'A game starts at <b>10:15 am</b> and lasts <b>45 min</b>. What hour does it end in? Enter the hour only.',answer:11,unit:'',hint:'10:15 + 45 min = 11:00'},
+  ]},
+  {id:'test_p3_area_perimeter',level:3,name:'P3 Area & Perimeter',emoji:'⬛',desc:'Area and perimeter of rectangles',difficulty:'medium',questions:[
+    {id:'p3ap1',type:'number',text:'Find the area of a rectangle with length <b>8 cm</b> and breadth <b>6 cm</b>.',answer:48,unit:'cm²',hint:'Area = 8 × 6 = 48 cm²'},
+    {id:'p3ap2',type:'number',text:'Find the perimeter of a rectangle with length <b>12 cm</b> and breadth <b>5 cm</b>.',answer:34,unit:'cm',hint:'Perimeter = 12 + 5 + 12 + 5 = 34 cm'},
+    {id:'p3ap3',type:'number',text:'A square has side <b>7 cm</b>. Find its perimeter.',answer:28,unit:'cm',hint:'4 × 7 = 28 cm'},
+  ]},
+  {id:'test_p3_angles_lines',level:3,name:'P3 Angles & Lines',emoji:'📐',desc:'Right angles, parallel and perpendicular lines',difficulty:'medium',questions:[
+    {id:'p3al1',type:'compare',text:'Which angle is <span class="highlight">greater than a right angle</span>?',optA:{label:'120°',emoji:'∠'},optB:{label:'90°',emoji:'∟'},answer:'A',tip:'A right angle is 90°.',hint:'120° is greater than 90°.'},
+    {id:'p3al2',type:'compare',text:'Which pair of lines meet at a right angle?',optA:{label:'Perpendicular lines',emoji:'⊥'},optB:{label:'Parallel lines',emoji:'∥'},answer:'A',tip:'Think about the corner of a square.',hint:'Perpendicular lines meet at a right angle.'},
+    {id:'p3al3',type:'number',text:'How many degrees are in a <b>right angle</b>?',answer:90,unit:'°',hint:'A right angle is 90°'},
+  ]},
+  {id:'test_p3_bar_graphs',level:3,name:'P3 Bar Graphs',emoji:'📊',desc:'Reading bars and scales',difficulty:'medium',questions:[
+    {id:'p3bar1',type:'number',text:'A bar graph shows Class A has <b>18</b> pupils and Class B has <b>24</b>. How many more pupils are in Class B?',answer:6,unit:'pupils',hint:'24 − 18 = 6'},
+    {id:'p3bar2',type:'number',text:'A bar graph scale goes by <b>5</b>. A bar reaches the 7th mark. What value does it show?',answer:35,unit:'',hint:'7 × 5 = 35'},
+    {id:'p3bar3',type:'number',text:'Three bars show <b>12</b>, <b>8</b> and <b>15</b>. What is the total?',answer:35,unit:'',hint:'12 + 8 + 15 = 35'},
+  ]},
+
+  {id:'test_p4_whole_numbers',level:4,name:'P4 Whole Numbers',emoji:'🔢',desc:'Numbers to 100 000, rounding and operations',difficulty:'medium',questions:[
+    {id:'p4wn1',type:'number',text:'Round <b>47 628</b> to the nearest <b>1000</b>.',answer:48000,unit:'',hint:'47 628 is closer to 48 000 than 47 000'},
+    {id:'p4wn2',type:'number',text:'Calculate <b>326 × 24</b>.',answer:7824,unit:'',hint:'326×20 + 326×4 = 6520 + 1304 = 7824'},
+    {id:'p4wn3',type:'number',text:'Calculate <b>8064 ÷ 8</b>.',answer:1008,unit:'',hint:'8000÷8 = 1000 and 64÷8 = 8'},
+  ]},
+  {id:'test_p4_factors_multiples',level:4,name:'P4 Factors & Multiples',emoji:'🧩',desc:'Factors, multiples, GCF and LCM',difficulty:'medium',questions:[
+    {id:'p4fm1',type:'number',text:'What is the <b>greatest common factor</b> of <b>12</b> and <b>18</b>?',answer:6,unit:'',hint:'Common factors are 1, 2, 3 and 6'},
+    {id:'p4fm2',type:'number',text:'What is the <b>lowest common multiple</b> of <b>4</b> and <b>6</b>?',answer:12,unit:'',hint:'12 is the first common multiple'},
+    {id:'p4fm3',type:'number',text:'How many factors does <b>16</b> have?',answer:5,unit:'factors',hint:'1, 2, 4, 8 and 16'},
+  ]},
+  {id:'test_p4_fractions',level:4,name:'P4 Fractions',emoji:'🍰',desc:'Mixed numbers, improper fractions and unlike denominators',difficulty:'medium',questions:[
+    {id:'p4frac1',type:'number',text:'<b>3/4 − 1/6 = ?/12</b>. Enter the missing numerator.',answer:7,unit:'',hint:'3/4 = 9/12 and 1/6 = 2/12, so 7/12'},
+    {id:'p4frac2',type:'number',text:'Convert <b>2 1/3</b> to an improper fraction with denominator 3. Enter the numerator.',answer:7,unit:'',hint:'2 1/3 = 7/3'},
+    {id:'p4frac3',type:'number',text:'<b>5/8 + 1/4 = ?/8</b>. Enter the missing numerator.',answer:7,unit:'',hint:'1/4 = 2/8, so 5/8 + 2/8 = 7/8'},
+  ]},
+  {id:'test_p4_decimals',level:4,name:'P4 Decimals',emoji:'🧮',desc:'Decimal place value and operations',difficulty:'medium',questions:[
+    {id:'p4dec1',type:'number',text:'What is the value of the digit <b>7</b> in <b>3.708</b>?',answer:0.7,unit:'',hint:'7 is in the tenths place'},
+    {id:'p4dec2',type:'number',text:'Calculate <b>4.25 + 3.6</b>.',answer:7.85,unit:'',hint:'4.25 + 3.60 = 7.85'},
+    {id:'p4dec3',type:'number',text:'Calculate <b>6.4 × 3</b>.',answer:19.2,unit:'',hint:'64 × 3 = 192, so 6.4 × 3 = 19.2'},
+  ]},
+  {id:'test_p4_area_perimeter',level:4,name:'P4 Area & Perimeter',emoji:'⬛',desc:'Composite area and missing side problems',difficulty:'medium',questions:[
+    {id:'p4ap1',type:'number',text:'A composite figure is made from rectangles <b>10 cm × 4 cm</b> and <b>6 cm × 3 cm</b>. Find the total area.',answer:58,unit:'cm²',hint:'10×4 + 6×3 = 40 + 18 = 58'},
+    {id:'p4ap2',type:'number',text:'A rectangle has area <b>48 cm²</b> and length <b>8 cm</b>. Find its breadth.',answer:6,unit:'cm',hint:'Breadth = 48 ÷ 8 = 6 cm'},
+    {id:'p4ap3',type:'number',text:'A square has area <b>81 cm²</b>. What is the length of one side?',answer:9,unit:'cm',hint:'9 × 9 = 81'},
+  ]},
+  {id:'test_p4_angles',level:4,name:'P4 Angles',emoji:'🧭',desc:'Angles at a point, on a line and unknown angles',difficulty:'medium',questions:[
+    {id:'p4ang1',type:'number',text:'Angles at a point are <b>90°</b>, <b>120°</b> and <b>x°</b>. Find <b>x</b>.',answer:150,unit:'°',hint:'Angles at a point add to 360°, so x = 360 − 210'},
+    {id:'p4ang2',type:'number',text:'Two angles on a straight line are <b>65°</b> and <b>x°</b>. Find <b>x</b>.',answer:115,unit:'°',hint:'Angles on a straight line add to 180°'},
+    {id:'p4ang3',type:'number',text:'A full turn is how many degrees?',answer:360,unit:'°',hint:'A full turn is 360°'},
+  ]},
+  {id:'test_p4_symmetry',level:4,name:'P4 Symmetry',emoji:'🪞',desc:'Line symmetry and symmetrical figures',difficulty:'medium',questions:[
+    {id:'p4sym1',type:'compare',text:'Which shape has <span class="highlight">more lines of symmetry</span>?',optA:{label:'Square',emoji:'□'},optB:{label:'Rectangle',emoji:'▭'},answer:'A',tip:'Compare their symmetry lines.',hint:'A square has 4 lines of symmetry; a rectangle has 2.'},
+    {id:'p4sym2',type:'number',text:'How many lines of symmetry does an <b>equilateral triangle</b> have?',answer:3,unit:'lines',hint:'Each vertex can fold to the opposite side'},
+    {id:'p4sym3',type:'number',text:'How many lines of symmetry does a <b>regular pentagon</b> have?',answer:5,unit:'lines',hint:'A regular pentagon has 5 equal sides and 5 symmetry lines'},
+  ]},
+  {id:'test_p4_nets_solids',level:4,name:'P4 Nets & Solids',emoji:'📦',desc:'2D representations of cubes and cuboids',difficulty:'medium',questions:[
+    {id:'p4net1',type:'number',text:'How many square faces does a <b>cube</b> have?',answer:6,unit:'faces',hint:'A cube has 6 square faces'},
+    {id:'p4net2',type:'compare',text:'Which solid can be made from <span class="highlight">6 equal squares</span>?',optA:{label:'Cube',emoji:'🧊'},optB:{label:'Cone',emoji:'🍦'},answer:'A',tip:'Think about nets.',hint:'A cube net is made from 6 squares.'},
+    {id:'p4net3',type:'number',text:'A cuboid has how many faces?',answer:6,unit:'faces',hint:'A cuboid has 6 faces'},
+  ]},
+  {id:'test_p4_data',level:4,name:'P4 Tables & Graphs',emoji:'📊',desc:'Tables, bar graphs and pie charts',difficulty:'medium',questions:[
+    {id:'p4data1',type:'number',text:'A table shows <b>12</b>, <b>15</b> and <b>9</b> votes. What is the total?',answer:36,unit:'votes',hint:'12 + 15 + 9 = 36'},
+    {id:'p4data2',type:'number',text:'A pie chart has <b>1/4</b> of 40 pupils choosing soccer. How many pupils chose soccer?',answer:10,unit:'pupils',hint:'1/4 of 40 = 10'},
+    {id:'p4data3',type:'number',text:'A graph scale is <b>10</b>. A bar reaches halfway between 30 and 40. What is the value?',answer:35,unit:'',hint:'Halfway between 30 and 40 is 35'},
+  ]},
+
+  {id:'test_p5_fractions',level:5,name:'P5 Fractions',emoji:'🍰',desc:'Fraction multiplication, division and word problems',difficulty:'hard',questions:[
+    {id:'p5frac1',type:'number',text:'<b>2/3 × 3/4</b> = ? Enter the answer as a decimal.',answer:0.5,unit:'',hint:'2/3 × 3/4 = 6/12 = 1/2 = 0.5'},
+    {id:'p5frac2',type:'number',text:'<b>3/5</b> of <b>45</b> is what?',answer:27,unit:'',hint:'45 ÷ 5 × 3 = 27'},
+    {id:'p5frac3',type:'number',text:'<b>1/2 ÷ 1/4</b> = ?',answer:2,unit:'',hint:'How many quarters are in one half? Two.'},
+  ]},
+  {id:'test_p5_decimals_percent',level:5,name:'P5 Decimals & Percent',emoji:'%',desc:'Decimal conversion, percentages and discounts',difficulty:'hard',questions:[
+    {id:'p5dp1',type:'number',text:'Convert <b>3.5 km</b> to metres.',answer:3500,unit:'m',hint:'3.5 × 1000 = 3500 m'},
+    {id:'p5dp2',type:'number',text:'Find <b>15%</b> of <b>80</b>.',answer:12,unit:'',hint:'10% of 80 is 8 and 5% is 4, so total is 12'},
+    {id:'p5dp3',type:'number',text:'A $50 bag has a <b>20%</b> discount. What is the sale price?',answer:40,unit:'dollars',hint:'20% of 50 = 10, and 50 − 10 = 40'},
+  ]},
+  {id:'test_p5_ratio',level:5,name:'P5 Ratio',emoji:'🔷',desc:'Simple ratios and sharing quantities',difficulty:'hard',questions:[
+    {id:'p5ratio1',type:'number',text:'A quantity is divided in the ratio <b>2 : 3</b>. If the total is <b>40</b>, what is the larger share?',answer:24,unit:'',hint:'5 parts = 40, so 1 part = 8 and 3 parts = 24'},
+    {id:'p5ratio2',type:'number',text:'<b>3 : 5 = 12 : x</b>. Find <b>x</b>.',answer:20,unit:'',hint:'3 is multiplied by 4 to get 12, so 5 × 4 = 20'},
+    {id:'p5ratio3',type:'number',text:'The ratio of boys to girls is <b>4 : 5</b>. There are <b>36</b> pupils. How many girls?',answer:20,unit:'girls',hint:'9 parts = 36, so 1 part = 4 and girls = 5 parts = 20'},
+  ]},
+  {id:'test_p5_rate',level:5,name:'P5 Rate',emoji:'🏃',desc:'Rate, total amount and number of units',difficulty:'hard',questions:[
+    {id:'p5rate1',type:'number',text:'A car travels <b>180 km</b> in <b>3 h</b>. What is its speed?',answer:60,unit:'km/h',hint:'Rate = 180 ÷ 3 = 60 km/h'},
+    {id:'p5rate2',type:'number',text:'A printer prints <b>6 pages/min</b> for <b>8 min</b>. How many pages?',answer:48,unit:'pages',hint:'6 × 8 = 48'},
+    {id:'p5rate3',type:'number',text:'A tap fills <b>12 ℓ</b> in <b>4 min</b>. What is the rate?',answer:3,unit:'ℓ/min',hint:'12 ÷ 4 = 3 ℓ/min'},
+  ]},
+  {id:'test_p5_area_triangles',level:5,name:'P5 Area of Triangles',emoji:'🔺',desc:'Triangle area and composite figures',difficulty:'hard',questions:[
+    {id:'p5area1',type:'number',text:'Find the area of a triangle with base <b>12 cm</b> and height <b>5 cm</b>.',answer:30,unit:'cm²',hint:'Area = 1/2 × 12 × 5 = 30'},
+    {id:'p5area2',type:'number',text:'A figure has a rectangle <b>8 cm × 6 cm</b> and a triangle with base <b>8 cm</b>, height <b>4 cm</b>. Find the total area.',answer:64,unit:'cm²',hint:'Rectangle area 48, triangle area 16, total 64'},
+    {id:'p5area3',type:'number',text:'A triangle has area <b>36 cm²</b> and base <b>9 cm</b>. Find its height.',answer:8,unit:'cm',hint:'36 = 1/2 × 9 × height, so height = 8'},
+  ]},
+  {id:'test_p5_volume',level:5,name:'P5 Volume',emoji:'📦',desc:'Cubes, cuboids and tanks',difficulty:'hard',questions:[
+    {id:'p5vol1',type:'number',text:'Find the volume of a cuboid <b>5 cm × 4 cm × 3 cm</b>.',answer:60,unit:'cm³',hint:'Volume = 5 × 4 × 3 = 60 cm³'},
+    {id:'p5vol2',type:'number',text:'A tank is <b>40 cm × 20 cm × 10 cm</b>. How many litres of water can it hold?',answer:8,unit:'ℓ',hint:'Volume = 8000 cm³ = 8000 ml = 8 ℓ'},
+    {id:'p5vol3',type:'number',text:'A cube has side <b>6 cm</b>. Find its volume.',answer:216,unit:'cm³',hint:'6 × 6 × 6 = 216'},
+  ]},
+  {id:'test_p5_angles_triangles',level:5,name:'P5 Angles & Triangles',emoji:'📐',desc:'Angle properties and special triangles',difficulty:'hard',questions:[
+    {id:'p5ang1',type:'number',text:'A triangle has angles <b>50°</b>, <b>60°</b> and <b>x°</b>. Find <b>x</b>.',answer:70,unit:'°',hint:'Angles in a triangle add to 180°'},
+    {id:'p5ang2',type:'number',text:'An isosceles triangle has vertex angle <b>40°</b>. Find each equal base angle.',answer:70,unit:'°',hint:'180 − 40 = 140, and 140 ÷ 2 = 70'},
+    {id:'p5ang3',type:'compare',text:'Which triangle has <span class="highlight">three equal sides</span>?',optA:{label:'Equilateral',emoji:'△'},optB:{label:'Right-angled',emoji:'⊿'},answer:'A',tip:'Think about triangle properties.',hint:'An equilateral triangle has three equal sides.'},
+  ]},
+  {id:'test_p5_average_data',level:5,name:'P5 Average & Data',emoji:'📊',desc:'Average and interpreting data',difficulty:'hard',questions:[
+    {id:'p5avg1',type:'number',text:'Find the average of <b>12</b>, <b>18</b> and <b>21</b>.',answer:17,unit:'',hint:'Total = 51, and 51 ÷ 3 = 17'},
+    {id:'p5avg2',type:'number',text:'The average of <b>5</b> numbers is <b>12</b>. What is their total?',answer:60,unit:'',hint:'Total = average × number of data = 12 × 5'},
+    {id:'p5avg3',type:'number',text:'Four scores have an average of <b>15</b>. Three scores are <b>12</b>, <b>16</b> and <b>18</b>. Find the fourth score.',answer:14,unit:'',hint:'Total needed = 60. Known total = 46. Missing score = 14'},
+  ]},
+
+  {id:'test_p6_ratio',level:6,name:'P6 Ratio',emoji:'🔷',desc:'Ratio comparison and before-after problems',difficulty:'hard',questions:[
+    {id:'p6ratio1',type:'number',text:'A ratio is <b>3 : 7</b>. The smaller share is <b>18</b>. What is the larger share?',answer:42,unit:'',hint:'3 parts = 18, so 1 part = 6 and 7 parts = 42'},
+    {id:'p6ratio2',type:'number',text:'The ratio of red to blue beads is <b>5 : 4</b>. There are <b>81</b> beads. How many red beads?',answer:45,unit:'beads',hint:'9 parts = 81, so 1 part = 9 and red = 45'},
+    {id:'p6ratio3',type:'number',text:'<b>7 : 9 = 28 : x</b>. Find <b>x</b>.',answer:36,unit:'',hint:'7 is multiplied by 4, so 9 × 4 = 36'},
+  ]},
+  {id:'test_p6_algebra',level:6,name:'P6 Algebra',emoji:'𝑥',desc:'Expressions, equations and substitution',difficulty:'hard',questions:[
+    {id:'p6alg1',type:'number',text:'Evaluate <b>3a + 5</b> when <b>a = 7</b>.',answer:26,unit:'',hint:'3×7 + 5 = 21 + 5 = 26'},
+    {id:'p6alg2',type:'number',text:'Solve <b>4x + 6 = 30</b>. Find <b>x</b>.',answer:6,unit:'',hint:'4x = 24, so x = 6'},
+    {id:'p6alg3',type:'number',text:'If <b>2y − 9 = 15</b>, find <b>y</b>.',answer:12,unit:'',hint:'2y = 24, so y = 12'},
+  ]},
+  {id:'test_p6_percentage',level:6,name:'P6 Percentage',emoji:'💯',desc:'Percentage change, discount and GST-style problems',difficulty:'hard',questions:[
+    {id:'p6pct1',type:'number',text:'A value increases from <b>80</b> to <b>100</b>. What is the percentage increase?',answer:25,unit:'%',hint:'Increase = 20, and 20/80 × 100% = 25%'},
+    {id:'p6pct2',type:'number',text:'A $240 item is discounted by <b>15%</b>. What is the discount amount?',answer:36,unit:'dollars',hint:'15% of 240 = 36'},
+    {id:'p6pct3',type:'number',text:'After a <b>20%</b> increase, a number becomes <b>72</b>. What was the original number?',answer:60,unit:'',hint:'120% = 72, so 100% = 60'},
+  ]},
+  {id:'test_p6_speed',level:6,name:'P6 Speed',emoji:'🚲',desc:'Speed, distance and time',difficulty:'hard',questions:[
+    {id:'p6speed1',type:'number',text:'A cyclist travels at <b>15 km/h</b> for <b>2 h</b>. How far does the cyclist travel?',answer:30,unit:'km',hint:'15 × 2 = 30 km'},
+    {id:'p6speed2',type:'number',text:'A car travels <b>150 km</b> in <b>2.5 h</b>. Find its speed.',answer:60,unit:'km/h',hint:'150 ÷ 2.5 = 60'},
+    {id:'p6speed3',type:'number',text:'A runner moves at <b>8 m/s</b> for <b>45 s</b>. How far does the runner go?',answer:360,unit:'m',hint:'8 × 45 = 360'},
+  ]},
+  {id:'test_p6_circles',level:6,name:'P6 Circles',emoji:'⭕',desc:'Circumference, area and semicircles',difficulty:'hard',questions:[
+    {id:'p6circ1',type:'number',text:'Using π = 22/7, find the circumference of a circle with radius <b>7 cm</b>.',answer:44,unit:'cm',hint:'Circumference = 2πr = 2 × 22/7 × 7 = 44'},
+    {id:'p6circ2',type:'number',text:'Using π = 22/7, find the area of a circle with radius <b>7 cm</b>.',answer:154,unit:'cm²',hint:'Area = πr² = 22/7 × 7 × 7 = 154'},
+    {id:'p6circ3',type:'number',text:'Using π = 22/7, find the perimeter of a semicircle with radius <b>14 cm</b>.',answer:72,unit:'cm',hint:'Half circumference = 44 cm, diameter = 28 cm, total = 72 cm'},
+  ]},
+  {id:'test_p6_volume_cuboids',level:6,name:'P6 Volume & Cuboids',emoji:'📦',desc:'Missing dimensions and volume of cuboids',difficulty:'hard',questions:[
+    {id:'p6vol1',type:'number',text:'A cuboid has volume <b>120 cm³</b>, length <b>6 cm</b> and breadth <b>5 cm</b>. Find its height.',answer:4,unit:'cm',hint:'Height = 120 ÷ (6 × 5) = 4 cm'},
+    {id:'p6vol2',type:'number',text:'A tank is half full with <b>18 ℓ</b> of water. What is its full capacity?',answer:36,unit:'ℓ',hint:'Half is 18 ℓ, so full is 36 ℓ'},
+    {id:'p6vol3',type:'number',text:'A cuboid has base area <b>48 cm²</b> and height <b>7 cm</b>. Find its volume.',answer:336,unit:'cm³',hint:'Volume = base area × height = 48 × 7'},
+  ]},
+  {id:'test_p6_geometry',level:6,name:'P6 Geometry',emoji:'📐',desc:'Angles, quadrilaterals and geometric reasoning',difficulty:'hard',questions:[
+    {id:'p6geo1',type:'compare',text:'Which quadrilateral has <span class="highlight">one pair of parallel sides</span>?',optA:{label:'Trapezium',emoji:'▱'},optB:{label:'Rhombus',emoji:'◇'},answer:'A',tip:'Think about quadrilateral properties.',hint:'A trapezium has one pair of parallel sides.'},
+    {id:'p6geo2',type:'number',text:'The angles in a quadrilateral add up to how many degrees?',answer:360,unit:'°',hint:'Angles in a quadrilateral add to 360°'},
+    {id:'p6geo3',type:'number',text:'A parallelogram has one angle of <b>65°</b>. Find the adjacent angle.',answer:115,unit:'°',hint:'Adjacent angles in a parallelogram add to 180°'},
+  ]},
+  {id:'test_p6_data_average',level:6,name:'P6 Data & Average',emoji:'📊',desc:'Pie charts, average and data reasoning',difficulty:'hard',questions:[
+    {id:'p6data1',type:'number',text:'A pie chart section is <b>25%</b> of <b>80</b> pupils. How many pupils is that?',answer:20,unit:'pupils',hint:'25% is one quarter, and 80 ÷ 4 = 20'},
+    {id:'p6data2',type:'number',text:'The average of <b>6</b> numbers is <b>14</b>. What is their total?',answer:84,unit:'',hint:'Total = 6 × 14 = 84'},
+    {id:'p6data3',type:'number',text:'A pie chart angle is <b>90°</b>. What percentage of the whole chart is it?',answer:25,unit:'%',hint:'90/360 = 1/4 = 25%'},
+  ]},
 ];
 
-// ================================================================
-// APP STATE
-// ================================================================
+	// ================================================================
+	// APP STATE
+	// ================================================================
+function testsForPracticeLevel(level){
+  const lvl=Number(level)||1;
+  return TESTS.filter(t=>Number(t.level||1)===lvl);
+}
+function shortTopicName(test){
+  return String(test?.name||'Topic').replace(/^P\d+\s*/,'');
+}
+function practiceTopicOptions(level){
+  const tests=testsForPracticeLevel(level);
+  return [
+    {id:'mix',emoji:'🎲',name:'Mixed'},
+    ...tests.map(t=>({id:t.id,emoji:t.emoji||'📝',name:shortTopicName(t)}))
+  ];
+}
+function normalizePracticeMode(level,mode){
+  const ids=new Set(practiceTopicOptions(level).map(x=>x.id));
+  return ids.has(mode)?mode:'mix';
+}
+function practiceQuestionPool(){
+  const p=APP.practice;
+  p.mode=normalizePracticeMode(p.level,p.mode);
+  const tests=p.mode==='mix'
+    ?testsForPracticeLevel(p.level)
+    :TESTS.filter(t=>t.id===p.mode);
+  return tests.flatMap(t=>(t.questions||[]).map(q=>({...q,practiceTopic:t.name})));
+}
+function genPracticeQuestion(){
+  const pool=practiceQuestionPool();
+  const q=JSON.parse(JSON.stringify(pick(pool.length?pool:TESTS.flatMap(t=>t.questions))));
+  q.practiceTopic=q.practiceTopic||'Practice';
+  return q;
+}
+
 const APP={
   screen:'student_login',
   studentName:'',
@@ -436,7 +618,7 @@ const APP={
   // Live session
   sessionStart:null,sessionType:null,timerTick:null,
   // Practice
-  practice:{mode:'convert',level:1,qNum:1,currentQ:null,answered:false,history:[]},
+  practice:{mode:'mix',level:1,qNum:1,currentQ:null,answered:false,history:[]},
   // Test
   test:{id:null,questions:[],current:0,answers:[]},
   // Review
@@ -1329,7 +1511,7 @@ async function loginStudent(name){
 async function loadStudentByName(name){
   const ok=await loginStudent(name);
   if(!ok)return false;
-  APP.practice={mode:'convert',level:1,qNum:1,currentQ:null,answered:false,history:[]};
+  APP.practice={mode:'mix',level:1,qNum:1,currentQ:null,answered:false,history:[]};
   APP.test={id:null,questions:[],current:0,answers:[]};
   APP.review={source:null,items:[],backTo:'home'};
   APP.selectedAttempt=null;
@@ -1633,6 +1815,8 @@ function sTestHistory(){
 
 function sPractice(){
   const p=APP.practice,cor=p.history.filter(x=>x.correct).length;
+  p.mode=normalizePracticeMode(p.level,p.mode);
+  const topics=practiceTopicOptions(p.level);
   return `
 <div class="screen">
   <div class="nav">
@@ -1641,13 +1825,13 @@ function sPractice(){
     <div class="nav-timer" id="sessTimer">0s</div>
   </div>
   <div class="levels">
-    ${[1,2,3].map(l=>`<button class="level-btn${p.level===l?' active':''}" data-a="set-level" data-val="${l}">
-      <span class="lvl-num">LEVEL ${l}</span>${['Easy','Medium','Hard'][l-1]}</button>`).join('')}
+    ${[1,2,3,4,5,6].map(l=>`<button class="level-btn${p.level===l?' active':''}" data-a="set-level" data-val="${l}">
+      <span class="lvl-num">LEVEL</span>P${l}</button>`).join('')}
   </div>
   <div class="modes">
-    ${[['convert','🔄','Convert'],['compare','⚖️','Compare'],['reallife','🍎','Real Life']].map(([m,e,n])=>
-      `<button class="mode-btn${p.mode===m?' active':''}" data-a="set-mode" data-val="${m}">
-        <span class="mode-emoji">${e}</span>${n}</button>`).join('')}
+    ${topics.map(t=>
+      `<button class="mode-btn${p.mode===t.id?' active':''}" data-a="set-mode" data-val="${t.id}">
+        <span class="mode-emoji">${t.emoji}</span>${escapeHtml(t.name)}</button>`).join('')}
   </div>
   <div class="review-bar" id="revBar" style="${p.history.length===0?'display:none':''}">
     <div class="review-bar-info" id="revInfo">✅ ${cor}/${p.history.length} correct</div>
@@ -1658,13 +1842,13 @@ function sPractice(){
 }
 
 function renderPracticeQ(){
-  const gens={convert:genConvert,compare:genCompare,reallife:genRealLife};
   const p=APP.practice;
-  p.currentQ=gens[p.mode]();p.answered=false;
+  p.currentQ=genPracticeQuestion();p.answered=false;
   const card=document.getElementById('practiceCard');if(!card)return;
+  const topic=p.currentQ.practiceTopic?shortTopicName({name:p.currentQ.practiceTopic}):'Mixed';
   card.innerHTML=`
     <div class="card">
-      <div class="card-badge">Q ${p.qNum}</div>
+      <div class="card-badge">P${p.level} · ${escapeHtml(topic)} · Q ${p.qNum}</div>
       ${qBody(p.currentQ)}
     </div>
     <div id="pFeed"></div>`;
@@ -1680,22 +1864,30 @@ function sTestMenu(){
     <div style="width:60px"></div>
   </div>
   <div class="test-grid">
-    ${TESTS.map(t=>{
-      const worth=testStarWorth(t);
-      return`
-      <div class="test-card" data-a="start-test" data-val="${t.id}">
-        <div class="test-emoji">${t.emoji}</div>
-        <div>
-          <div class="test-name">${t.name}</div>
-          <div class="test-desc">${t.desc}</div>
-          <div class="test-meta">
-            <span class="tag ${t.difficulty}">${cap(t.difficulty)}</span>
-            <span class="tag" style="background:#f0f0f0">${t.questions.length} questions</span>
-            <span class="tag" style="background:#fff4d6">⭐ Base ${worth.base}</span>
-            <span class="tag" style="background:#e8f6ff">⭐ Max ${worth.max}</span>
-          </div>
-        </div>
-      </div>`;
+    ${[1,2,3,4,5,6].map(level=>{
+      const tests=TESTS.filter(t=>Number(t.level||1)===level);
+      if(!tests.length)return '';
+      return `
+        <div class="test-level-block">
+          <div class="test-level-title">P${level} Topic Tests</div>
+          ${tests.map(t=>{
+            const worth=testStarWorth(t);
+            return`
+            <div class="test-card" data-a="start-test" data-val="${t.id}">
+              <div class="test-emoji">${t.emoji}</div>
+              <div>
+                <div class="test-name">${t.name}</div>
+                <div class="test-desc">${t.desc}</div>
+                <div class="test-meta">
+                  <span class="tag ${t.difficulty}">${cap(t.difficulty)}</span>
+                  <span class="tag" style="background:#f0f0f0">${t.questions.length} questions</span>
+                  <span class="tag" style="background:#fff4d6">⭐ Base ${worth.base}</span>
+                  <span class="tag" style="background:#e8f6ff">⭐ Max ${worth.max}</span>
+                </div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`;
     }).join('')}
   </div>
   <button class="act-btn secondary" style="width:100%;margin-top:12px" data-a="go-test-history">📚 Review Past Tests</button>
@@ -1706,6 +1898,7 @@ function sTestActive(){
   const t=APP.test,q=t.questions[t.current];
   const pct=Math.round(t.current/t.questions.length*100);
   const obj=TESTS.find(x=>x.id===t.id);
+  const worth=obj?testStarWorth(obj):null;
   return `
 <div class="screen">
   <div class="nav">
@@ -1720,6 +1913,11 @@ function sTestActive(){
       <span>${t.answers.filter(a=>a.correct).length} correct</span>
     </div>
   </div>
+  ${worth?`<div class="test-live-meta">
+    <span class="tag ${obj.difficulty}">${cap(obj.difficulty)}</span>
+    <span class="tag" style="background:#fff4d6">⭐ Base ${worth.base}</span>
+    <span class="tag" style="background:#e8f6ff">⭐ Max ${worth.max}</span>
+  </div>`:''}
   <div class="card">
     <div class="card-badge">Q ${t.current+1}</div>
     ${qBody(q)}
@@ -2354,7 +2552,7 @@ function handle(a,v){
     // ── Student navigation ──────────────────────────────────────
     case 'go-practice':
       if(!APP.studentName){go('student_login');toast('Login with your name first');break;}
-      APP.practice={mode:'convert',level:1,qNum:1,currentQ:null,answered:false,history:[]};
+      APP.practice={mode:'mix',level:1,qNum:1,currentQ:null,answered:false,history:[]};
       startSession('practice');go('practice');break;
     case 'go-test-menu':
       if(!APP.studentName){go('student_login');toast('Login with your name first');break;}
@@ -2362,8 +2560,15 @@ function handle(a,v){
     case 'go-test-history':
       if(!APP.studentName){go('student_login');toast('Login with your name first');break;}
       go('test_history');break;
-    case 'set-level':APP.practice.level=parseInt(v);APP.practice.qNum=1;go('practice');break;
-    case 'set-mode':APP.practice.mode=v;APP.practice.qNum=1;go('practice');break;
+    case 'set-level':
+      APP.practice.level=parseInt(v)||1;
+      APP.practice.mode='mix';
+      APP.practice.qNum=1;
+      go('practice');break;
+    case 'set-mode':
+      APP.practice.mode=normalizePracticeMode(APP.practice.level,v);
+      APP.practice.qNum=1;
+      go('practice');break;
     case 'submit-ans':{
       const inp=document.getElementById('qInput');
       if(APP.screen==='practice')submitPractice(inp?.value);
