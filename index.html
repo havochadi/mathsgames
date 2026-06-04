@@ -570,6 +570,224 @@ const TESTS=[
   ]},
 ];
 
+const EXTRA_TEST_QUESTIONS={
+  test_p1_numbers:[
+    {id:'p1num4',type:'number',text:'What number is <b>9 tens</b> and <b>2 ones</b>?',answer:92,unit:'',hint:'9 tens = 90, and 90 + 2 = 92'},
+    {id:'p1num5',type:'number',text:'Which number is smaller: <b>41</b> or <b>14</b>? Enter the smaller number.',answer:14,unit:'',hint:'14 has 1 ten, while 41 has 4 tens'},
+  ],
+  test_p1_add_subtract:[
+    {id:'p1as4',type:'number',text:'Calculate <b>37 + 22</b>.',answer:59,unit:'',hint:'37 + 20 + 2 = 59'},
+    {id:'p1as5',type:'number',text:'Calculate <b>80 − 36</b>.',answer:44,unit:'',hint:'80 − 30 − 6 = 44'},
+  ],
+  test_p1_multiplication_division:[
+    {id:'p1md4',type:'number',text:'There are <b>4</b> groups with <b>3</b> shells each. How many shells?',answer:12,unit:'shells',hint:'4 groups of 3 = 12'},
+    {id:'p1md5',type:'number',text:'<b>20</b> sweets are shared equally among <b>5</b> children. How many sweets each?',answer:4,unit:'sweets',hint:'20 ÷ 5 = 4'},
+  ],
+  test_p1_money:[
+    {id:'p1money4',type:'number',text:'How many cents are <b>2</b> fifty-cent coins?',answer:100,unit:'cents',hint:'50 + 50 = 100 cents'},
+    {id:'p1money5',type:'number',text:'<b>70 cents</b> + <b>20 cents</b> = how many cents?',answer:90,unit:'cents',hint:'70 + 20 = 90 cents'},
+  ],
+  test_p1_length:[
+    {id:'p1len4',type:'number',text:'A crayon is <b>9 cm</b>. A marker is <b>8 cm</b>. What is their total length?',answer:17,unit:'cm',hint:'9 + 8 = 17 cm'},
+    {id:'p1len5',type:'number',text:'A straw is <b>20 cm</b>. It is cut to <b>13 cm</b>. How many centimetres were cut off?',answer:7,unit:'cm',hint:'20 − 13 = 7 cm'},
+  ],
+  test_p1_time:[
+    {id:'p1time4',type:'number',text:'How many minutes are there in <b>1 hour</b>?',answer:60,unit:'min',hint:'1 hour = 60 minutes'},
+    {id:'p1time5',type:'number',text:'A cartoon starts at <b>5:00 pm</b> and ends at <b>5:30 pm</b>. How many minutes long is it?',answer:30,unit:'min',hint:'5:00 to 5:30 is 30 minutes'},
+  ],
+  test_p1_shapes:[
+    {id:'p1shape4',type:'number',text:'How many sides does a <b>square</b> have?',answer:4,unit:'sides',hint:'A square has 4 equal sides'},
+    {id:'p1shape5',type:'compare',text:'Which shape has <span class="highlight">3 corners</span>?',optA:{label:'Triangle',emoji:'△'},optB:{label:'Circle',emoji:'○'},answer:'A',tip:'Corners are vertices.',hint:'A triangle has 3 corners.'},
+  ],
+  test_p1_picture_graphs:[
+    {id:'p1graph4',type:'number',text:'A picture graph shows <b>6</b> books. Each book picture stands for <b>1</b> book. How many books?',answer:6,unit:'books',hint:'6 × 1 = 6 books'},
+    {id:'p1graph5',type:'number',text:'A graph shows <b>4</b> soccer balls. Each picture stands for <b>2</b> balls. How many balls?',answer:8,unit:'balls',hint:'4 × 2 = 8 balls'},
+  ],
+
+  test_p2_numbers:[
+    {id:'p2num4',type:'number',text:'What number is <b>5 hundreds</b>, <b>0 tens</b> and <b>9 ones</b>?',answer:509,unit:'',hint:'500 + 0 + 9 = 509'},
+    {id:'p2num5',type:'number',text:'Round <b>486</b> to the nearest <b>10</b>.',answer:490,unit:'',hint:'486 is closer to 490 than 480'},
+  ],
+  test_p2_multiplication_division:[
+    {id:'p2md4',type:'number',text:'Calculate <b>9 × 4</b>.',answer:36,unit:'',hint:'9 groups of 4 make 36'},
+    {id:'p2md5',type:'number',text:'Calculate <b>45 ÷ 5</b>.',answer:9,unit:'',hint:'5 × 9 = 45'},
+  ],
+  test_p2_fractions:[
+    {id:'p2frac4',type:'number',text:'<b>2/5 + 1/5</b> = ?/5. Enter the missing numerator.',answer:3,unit:'',hint:'2 fifths + 1 fifth = 3 fifths'},
+    {id:'p2frac5',type:'number',text:'<b>6/9 − 2/9</b> = ?/9. Enter the missing numerator.',answer:4,unit:'',hint:'6 ninths − 2 ninths = 4 ninths'},
+  ],
+  test_p2_money:[
+    {id:'p2money4',type:'number',text:'How many cents is <b>$5.60</b>?',answer:560,unit:'cents',hint:'$5.60 = 500 cents + 60 cents'},
+    {id:'p2money5',type:'number',text:'A snack costs <b>$2.35</b>. You pay <b>$5</b>. How much change?',answer:2.65,unit:'dollars',hint:'5.00 − 2.35 = 2.65'},
+  ],
+  test_p2_length:[
+    {id:'p2len4',type:'number',text:'Convert <b>5 m</b> to centimetres.',answer:500,unit:'cm',hint:'5 × 100 = 500 cm'},
+    {id:'p2len5',type:'number',text:'A ribbon is <b>150 cm</b>. How many metres and centimetres is that? Enter the number of centimetres beyond 1 m.',answer:50,unit:'cm',hint:'150 cm = 1 m 50 cm'},
+  ],
+  test_p2_mass:[
+    {id:'p2mass4',type:'number',text:'Convert <b>4 kg</b> to grams.',answer:4000,unit:'g',hint:'4 × 1000 = 4000 g'},
+    {id:'p2mass5',type:'number',text:'A melon is <b>1200 g</b> and a papaya is <b>800 g</b>. What is their total mass?',answer:2000,unit:'g',hint:'1200 + 800 = 2000 g'},
+  ],
+  test_p2_volume:[
+    {id:'p2vol4',type:'number',text:'Convert <b>2 ℓ</b> to millilitres.',answer:2000,unit:'ml',hint:'2 × 1000 = 2000 ml'},
+    {id:'p2vol5',type:'number',text:'A bottle has <b>750 ml</b>. Another has <b>250 ml</b>. How much altogether?',answer:1000,unit:'ml',hint:'750 + 250 = 1000 ml'},
+  ],
+  test_p2_time:[
+    {id:'p2time4',type:'number',text:'Convert <b>1 h 45 min</b> to minutes.',answer:105,unit:'min',hint:'60 + 45 = 105'},
+    {id:'p2time5',type:'number',text:'A bus ride starts at <b>2:15 pm</b> and ends at <b>3:00 pm</b>. How many minutes?',answer:45,unit:'min',hint:'2:15 to 3:00 is 45 minutes'},
+  ],
+  test_p2_geometry:[
+    {id:'p2geo4',type:'number',text:'How many edges does a <b>cube</b> have?',answer:12,unit:'edges',hint:'A cube has 12 edges'},
+    {id:'p2geo5',type:'compare',text:'Which solid has a <span class="highlight">circular base</span>?',optA:{label:'Cone',emoji:'🍦'},optB:{label:'Cube',emoji:'🧊'},answer:'A',tip:'Look at the base shape.',hint:'A cone has a circular base.'},
+  ],
+  test_p2_picture_graphs:[
+    {id:'p2graph4',type:'number',text:'A picture graph has <b>5</b> symbols. Each symbol represents <b>4</b> pupils. How many pupils?',answer:20,unit:'pupils',hint:'5 × 4 = 20'},
+    {id:'p2graph5',type:'number',text:'A graph shows <b>3</b> stars. Each star means <b>10</b> points. How many points?',answer:30,unit:'points',hint:'3 × 10 = 30'},
+  ],
+
+  test_p3_whole_numbers:[
+    {id:'p3wn4',type:'number',text:'Calculate <b>4256 + 3187</b>.',answer:7443,unit:'',hint:'4256 + 3000 + 187 = 7443'},
+    {id:'p3wn5',type:'number',text:'Calculate <b>672 × 4</b>.',answer:2688,unit:'',hint:'600×4 + 70×4 + 2×4 = 2688'},
+  ],
+  test_p3_fractions:[
+    {id:'p3frac4',type:'number',text:'<b>3/4 = ?/16</b>. Enter the missing numerator.',answer:12,unit:'',hint:'4 × 4 = 16, so 3 × 4 = 12'},
+    {id:'p3frac5',type:'number',text:'<b>2/7 + 4/7</b> = ?/7. Enter the missing numerator.',answer:6,unit:'',hint:'2 sevenths + 4 sevenths = 6 sevenths'},
+  ],
+  test_p3_money:[
+    {id:'p3money4',type:'number',text:'A pen costs <b>$1.80</b>. What is the cost of <b>5</b> pens?',answer:9,unit:'dollars',hint:'1.80 × 5 = 9.00'},
+    {id:'p3money5',type:'number',text:'Calculate <b>$25.00 − $13.75</b>.',answer:11.25,unit:'dollars',hint:'25.00 − 13.75 = 11.25'},
+  ],
+  test_p3_length_mass_volume:[
+    {id:'p3lmv4',type:'number',text:'Convert <b>5 km 80 m</b> to metres.',answer:5080,unit:'m',hint:'5 km = 5000 m, and 5000 + 80 = 5080'},
+    {id:'p3lmv5',type:'number',text:'Convert <b>6 ℓ 75 ml</b> to millilitres.',answer:6075,unit:'ml',hint:'6 ℓ = 6000 ml, and 6000 + 75 = 6075'},
+  ],
+  test_p3_time:[
+    {id:'p3time4',type:'number',text:'A movie lasts <b>1 h 40 min</b>. How many minutes is that?',answer:100,unit:'min',hint:'60 + 40 = 100'},
+    {id:'p3time5',type:'number',text:'A class starts at <b>8:20 am</b> and ends at <b>9:05 am</b>. How many minutes?',answer:45,unit:'min',hint:'8:20 to 9:00 is 40 min, then 5 min more'},
+  ],
+  test_p3_area_perimeter:[
+    {id:'p3ap4',type:'number',text:'Find the area of a rectangle <b>9 cm</b> by <b>7 cm</b>.',answer:63,unit:'cm²',hint:'9 × 7 = 63 cm²'},
+    {id:'p3ap5',type:'number',text:'A rectangle has length <b>10 cm</b> and breadth <b>4 cm</b>. Find its perimeter.',answer:28,unit:'cm',hint:'10 + 4 + 10 + 4 = 28 cm'},
+  ],
+  test_p3_angles_lines:[
+    {id:'p3al4',type:'compare',text:'Which pair of lines will never meet?',optA:{label:'Parallel lines',emoji:'∥'},optB:{label:'Perpendicular lines',emoji:'⊥'},answer:'A',tip:'Parallel lines stay the same distance apart.',hint:'Parallel lines do not meet.'},
+    {id:'p3al5',type:'number',text:'How many right angles are there in a <b>rectangle</b>?',answer:4,unit:'right angles',hint:'A rectangle has 4 corners, all right angles'},
+  ],
+  test_p3_bar_graphs:[
+    {id:'p3bar4',type:'number',text:'A bar graph scale goes by <b>2</b>. A bar reaches the 9th mark. What value does it show?',answer:18,unit:'',hint:'9 × 2 = 18'},
+    {id:'p3bar5',type:'number',text:'Bars show <b>25</b>, <b>15</b> and <b>10</b>. What is the total?',answer:50,unit:'',hint:'25 + 15 + 10 = 50'},
+  ],
+
+  test_p4_whole_numbers:[
+    {id:'p4wn4',type:'number',text:'Round <b>83 461</b> to the nearest <b>100</b>.',answer:83500,unit:'',hint:'The tens digit is 6, so round up to 83 500'},
+    {id:'p4wn5',type:'number',text:'Calculate <b>72 000 − 18 435</b>.',answer:53565,unit:'',hint:'72 000 − 18 435 = 53 565'},
+  ],
+  test_p4_factors_multiples:[
+    {id:'p4fm4',type:'number',text:'What is the <b>greatest common factor</b> of <b>24</b> and <b>36</b>?',answer:12,unit:'',hint:'The greatest common factor is 12'},
+    {id:'p4fm5',type:'number',text:'What is the <b>lowest common multiple</b> of <b>8</b> and <b>12</b>?',answer:24,unit:'',hint:'24 is the first common multiple'},
+  ],
+  test_p4_fractions:[
+    {id:'p4frac4',type:'number',text:'<b>2/3 + 1/6 = ?/6</b>. Enter the missing numerator.',answer:5,unit:'',hint:'2/3 = 4/6, so 4/6 + 1/6 = 5/6'},
+    {id:'p4frac5',type:'number',text:'Convert <b>11/4</b> to a mixed number. Enter the whole-number part.',answer:2,unit:'',hint:'11/4 = 2 remainder 3, so 2 3/4'},
+  ],
+  test_p4_decimals:[
+    {id:'p4dec4',type:'number',text:'Calculate <b>8.75 − 2.4</b>.',answer:6.35,unit:'',hint:'8.75 − 2.40 = 6.35'},
+    {id:'p4dec5',type:'number',text:'Calculate <b>3.2 × 5</b>.',answer:16,unit:'',hint:'32 × 5 = 160, so 3.2 × 5 = 16'},
+  ],
+  test_p4_area_perimeter:[
+    {id:'p4ap4',type:'number',text:'A rectangle has perimeter <b>34 cm</b> and length <b>10 cm</b>. Find its breadth.',answer:7,unit:'cm',hint:'2 × (10 + breadth) = 34, so breadth = 7'},
+    {id:'p4ap5',type:'number',text:'Find the area of a rectangle <b>12 cm</b> by <b>9 cm</b>.',answer:108,unit:'cm²',hint:'12 × 9 = 108 cm²'},
+  ],
+  test_p4_angles:[
+    {id:'p4ang4',type:'number',text:'Three angles on a straight line are <b>40°</b>, <b>55°</b> and <b>x°</b>. Find <b>x</b>.',answer:85,unit:'°',hint:'180 − 40 − 55 = 85'},
+    {id:'p4ang5',type:'number',text:'Angles at a point are <b>80°</b>, <b>95°</b>, <b>110°</b> and <b>x°</b>. Find <b>x</b>.',answer:75,unit:'°',hint:'360 − 80 − 95 − 110 = 75'},
+  ],
+  test_p4_symmetry:[
+    {id:'p4sym4',type:'number',text:'How many lines of symmetry does a <b>circle</b> have? Enter <b>999</b> for infinitely many.',answer:999,unit:'',hint:'A circle has infinitely many lines of symmetry'},
+    {id:'p4sym5',type:'number',text:'How many lines of symmetry does a <b>regular hexagon</b> have?',answer:6,unit:'lines',hint:'A regular hexagon has 6 symmetry lines'},
+  ],
+  test_p4_nets_solids:[
+    {id:'p4net4',type:'number',text:'How many rectangles are usually in a <b>cuboid net</b>?',answer:6,unit:'rectangles',hint:'A cuboid has 6 rectangular faces'},
+    {id:'p4net5',type:'compare',text:'Which solid has a net that includes <span class="highlight">circles</span>?',optA:{label:'Cylinder',emoji:'🥫'},optB:{label:'Cube',emoji:'🧊'},answer:'A',tip:'Think about the top and bottom faces.',hint:'A cylinder has 2 circular faces.'},
+  ],
+  test_p4_data:[
+    {id:'p4data4',type:'number',text:'A table shows <b>18</b>, <b>22</b>, <b>15</b> and <b>5</b>. What is the total?',answer:60,unit:'',hint:'18 + 22 + 15 + 5 = 60'},
+    {id:'p4data5',type:'number',text:'A pie chart has <b>1/5</b> of 50 pupils choosing art. How many pupils chose art?',answer:10,unit:'pupils',hint:'1/5 of 50 = 10'},
+  ],
+
+  test_p5_fractions:[
+    {id:'p5frac4',type:'number',text:'<b>4/5</b> of <b>60</b> is what?',answer:48,unit:'',hint:'60 ÷ 5 × 4 = 48'},
+    {id:'p5frac5',type:'number',text:'<b>3/4 ÷ 3/8</b> = ?',answer:2,unit:'',hint:'3/4 × 8/3 = 2'},
+  ],
+  test_p5_decimals_percent:[
+    {id:'p5dp4',type:'number',text:'Convert <b>2750 g</b> to kilograms.',answer:2.75,unit:'kg',hint:'2750 ÷ 1000 = 2.75 kg'},
+    {id:'p5dp5',type:'number',text:'Find <b>35%</b> of <b>200</b>.',answer:70,unit:'',hint:'35/100 × 200 = 70'},
+  ],
+  test_p5_ratio:[
+    {id:'p5ratio4',type:'number',text:'The ratio of apples to oranges is <b>2 : 5</b>. There are <b>49</b> fruits. How many oranges?',answer:35,unit:'oranges',hint:'7 parts = 49, so 1 part = 7 and oranges = 35'},
+    {id:'p5ratio5',type:'number',text:'A ratio <b>6 : 7</b> has a total of <b>65</b>. What is the smaller share?',answer:30,unit:'',hint:'13 parts = 65, so 1 part = 5 and 6 parts = 30'},
+  ],
+  test_p5_rate:[
+    {id:'p5rate4',type:'number',text:'A machine packs <b>84</b> boxes in <b>7 min</b>. What is the rate?',answer:12,unit:'boxes/min',hint:'84 ÷ 7 = 12'},
+    {id:'p5rate5',type:'number',text:'A car travels at <b>70 km/h</b> for <b>3 h</b>. How far does it travel?',answer:210,unit:'km',hint:'70 × 3 = 210 km'},
+  ],
+  test_p5_area_triangles:[
+    {id:'p5area4',type:'number',text:'Find the area of a triangle with base <b>18 cm</b> and height <b>7 cm</b>.',answer:63,unit:'cm²',hint:'1/2 × 18 × 7 = 63'},
+    {id:'p5area5',type:'number',text:'A triangle has area <b>45 cm²</b> and height <b>9 cm</b>. Find its base.',answer:10,unit:'cm',hint:'45 = 1/2 × base × 9, so base = 10'},
+  ],
+  test_p5_volume:[
+    {id:'p5vol4',type:'number',text:'A cuboid measures <b>8 cm × 5 cm × 4 cm</b>. Find its volume.',answer:160,unit:'cm³',hint:'8 × 5 × 4 = 160 cm³'},
+    {id:'p5vol5',type:'number',text:'A tank holds <b>12 000 cm³</b> of water. How many litres is that?',answer:12,unit:'ℓ',hint:'1000 cm³ = 1 ℓ, so 12 000 cm³ = 12 ℓ'},
+  ],
+  test_p5_angles_triangles:[
+    {id:'p5ang4',type:'number',text:'Two angles on a straight line are <b>125°</b> and <b>x°</b>. Find <b>x</b>.',answer:55,unit:'°',hint:'180 − 125 = 55'},
+    {id:'p5ang5',type:'number',text:'An isosceles triangle has equal base angles of <b>65°</b>. Find the vertex angle.',answer:50,unit:'°',hint:'180 − 65 − 65 = 50'},
+  ],
+  test_p5_average_data:[
+    {id:'p5avg4',type:'number',text:'Find the average of <b>8</b>, <b>12</b>, <b>20</b> and <b>24</b>.',answer:16,unit:'',hint:'Total = 64, and 64 ÷ 4 = 16'},
+    {id:'p5avg5',type:'number',text:'The average of <b>3</b> numbers is <b>18</b>. Two numbers are <b>15</b> and <b>21</b>. Find the third number.',answer:18,unit:'',hint:'Total = 54. 54 − 15 − 21 = 18'},
+  ],
+
+  test_p6_ratio:[
+    {id:'p6ratio4',type:'number',text:'The ratio of adults to children is <b>2 : 5</b>. There are <b>98</b> people. How many children?',answer:70,unit:'children',hint:'7 parts = 98, so 1 part = 14 and children = 70'},
+    {id:'p6ratio5',type:'number',text:'A number is split in the ratio <b>4 : 9</b>. The difference between the shares is <b>35</b>. Find the smaller share.',answer:28,unit:'',hint:'5 parts = 35, so 1 part = 7 and 4 parts = 28'},
+  ],
+  test_p6_algebra:[
+    {id:'p6alg4',type:'number',text:'Evaluate <b>5b − 4</b> when <b>b = 9</b>.',answer:41,unit:'',hint:'5×9 − 4 = 45 − 4 = 41'},
+    {id:'p6alg5',type:'number',text:'Solve <b>3x − 7 = 20</b>. Find <b>x</b>.',answer:9,unit:'',hint:'3x = 27, so x = 9'},
+  ],
+  test_p6_percentage:[
+    {id:'p6pct4',type:'number',text:'A price decreases from <b>$80</b> to <b>$60</b>. What is the percentage decrease?',answer:25,unit:'%',hint:'Decrease = 20, and 20/80 × 100% = 25%'},
+    {id:'p6pct5',type:'number',text:'A number increases by <b>25%</b> to become <b>100</b>. What was the original number?',answer:80,unit:'',hint:'125% = 100, so 100% = 80'},
+  ],
+  test_p6_speed:[
+    {id:'p6speed4',type:'number',text:'A train travels <b>240 km</b> at <b>80 km/h</b>. How many hours does it take?',answer:3,unit:'h',hint:'Time = distance ÷ speed = 240 ÷ 80 = 3'},
+    {id:'p6speed5',type:'number',text:'A swimmer covers <b>300 m</b> in <b>5 min</b>. What is the speed in m/min?',answer:60,unit:'m/min',hint:'300 ÷ 5 = 60'},
+  ],
+  test_p6_circles:[
+    {id:'p6circ4',type:'number',text:'Using π = 22/7, find the diameter of a circle with radius <b>21 cm</b>.',answer:42,unit:'cm',hint:'Diameter = 2 × radius = 42 cm'},
+    {id:'p6circ5',type:'number',text:'Using π = 22/7, find the circumference of a circle with diameter <b>14 cm</b>.',answer:44,unit:'cm',hint:'Circumference = πd = 22/7 × 14 = 44'},
+  ],
+  test_p6_volume_cuboids:[
+    {id:'p6vol4',type:'number',text:'A cuboid has volume <b>360 cm³</b>, length <b>12 cm</b> and breadth <b>5 cm</b>. Find its height.',answer:6,unit:'cm',hint:'Height = 360 ÷ (12 × 5) = 6'},
+    {id:'p6vol5',type:'number',text:'A tank has base area <b>250 cm²</b> and height <b>40 cm</b>. Find its volume in litres.',answer:10,unit:'ℓ',hint:'250 × 40 = 10 000 cm³ = 10 ℓ'},
+  ],
+  test_p6_geometry:[
+    {id:'p6geo4',type:'number',text:'A rhombus has one angle of <b>70°</b>. Find the adjacent angle.',answer:110,unit:'°',hint:'Adjacent angles in a rhombus add to 180°'},
+    {id:'p6geo5',type:'number',text:'The angles of a quadrilateral are <b>90°</b>, <b>85°</b>, <b>95°</b> and <b>x°</b>. Find <b>x</b>.',answer:90,unit:'°',hint:'360 − 90 − 85 − 95 = 90'},
+  ],
+  test_p6_data_average:[
+    {id:'p6data4',type:'number',text:'A pie chart angle is <b>72°</b>. What percentage of the whole chart is it?',answer:20,unit:'%',hint:'72/360 = 1/5 = 20%'},
+    {id:'p6data5',type:'number',text:'The average of <b>4</b> numbers is <b>25</b>. Three numbers are <b>18</b>, <b>24</b> and <b>30</b>. Find the fourth number.',answer:28,unit:'',hint:'Total = 100. 100 − 18 − 24 − 30 = 28'},
+  ],
+};
+
+for(const test of TESTS){
+  const extra=EXTRA_TEST_QUESTIONS[test.id]||[];
+  if(extra.length)test.questions.push(...extra);
+}
+
+
 	// ================================================================
 	// APP STATE
 	// ================================================================
