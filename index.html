@@ -64,6 +64,13 @@ body{font-family:'Fredoka',sans-serif;background:var(--cream);
 .mode-btn.active{background:var(--mint);color:white}
 .mode-btn:active{transform:translateY(1px);box-shadow:0 1px 0 var(--ink)}
 .mode-emoji{font-size:18px;display:block;margin-bottom:2px}
+.diffs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.diff-btn{border:3px solid var(--ink);background:white;padding:9px 4px;
+  border-radius:14px;font-family:'Fredoka',sans-serif;font-weight:600;font-size:12px;
+  cursor:pointer;box-shadow:0 3px 0 var(--ink);text-align:center}
+.diff-btn.active.easy{background:#D4EDDA}.diff-btn.active.medium{background:#FFF3CD}
+.diff-btn.active.hard{background:#FFE0E0}
+.diff-btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
 .review-bar{display:flex;justify-content:space-between;align-items:center;
   background:white;border:2px solid var(--ink);border-radius:14px;padding:8px 14px;margin-bottom:12px}
 .review-bar-info{font-size:13px;font-weight:600}
@@ -114,6 +121,51 @@ body{font-family:'Fredoka',sans-serif;background:var(--cream);
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 .item-name{font-size:15px;font-weight:600;color:var(--plum);margin-top:2px}
 .scale-wrap{display:flex;justify-content:center;margin:8px 0;height:118px}
+.visual-card{background:linear-gradient(135deg,#fffdf5,#eef7ff);border:3px solid var(--ink);
+  border-radius:20px;padding:12px;margin:2px 0 12px;box-shadow:0 3px 0 var(--ink);
+  overflow:hidden}
+.visual-title{text-align:center;font-size:12px;font-weight:700;color:var(--plum);margin-bottom:8px}
+.visual-row{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+.visual-choice{background:white;border:2px solid var(--ink);border-radius:16px;padding:10px 12px;
+  min-width:92px;text-align:center}
+.visual-emoji{font-size:34px;display:block;line-height:1}
+.visual-label{font-size:12px;font-weight:700;color:var(--plum);margin-top:4px}
+.visual-balance{position:relative;height:112px;margin:0 auto;max-width:320px}
+.visual-beam{position:absolute;left:44px;right:44px;top:44px;height:8px;background:var(--ink);border-radius:8px}
+.visual-stand{position:absolute;left:50%;top:48px;width:12px;height:46px;background:var(--ink);border-radius:8px;transform:translateX(-50%)}
+.visual-base{position:absolute;left:50%;bottom:6px;width:72px;height:10px;background:var(--ink);border-radius:12px;transform:translateX(-50%)}
+.visual-pan{position:absolute;top:58px;width:104px;background:white;border:3px solid var(--ink);
+  border-radius:18px;padding:9px 8px;text-align:center;box-shadow:0 3px 0 rgba(45,45,45,.2)}
+.visual-pan.left{left:4px}.visual-pan.right{right:4px}
+.visual-pan:before{content:'';position:absolute;left:50%;top:-18px;width:3px;height:18px;background:var(--ink)}
+.visual-ruler{height:62px;background:#FFEAA7;border:3px solid var(--ink);border-radius:12px;
+  display:flex;align-items:flex-end;justify-content:space-around;padding:0 8px 8px}
+.visual-tick{width:3px;background:var(--ink);border-radius:3px}
+.visual-tick.big{height:34px}.visual-tick.mid{height:24px}.visual-tick.small{height:14px}
+.visual-money{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.coin,.note{display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--ink);
+  font-weight:700;color:var(--ink)}
+.coin{width:40px;height:40px;border-radius:50%;background:var(--sun);font-size:11px}
+.note{width:66px;height:34px;border-radius:8px;background:var(--mint);font-size:12px}
+.visual-clock{width:96px;height:96px;border:5px solid var(--ink);border-radius:50%;background:white;
+  position:relative;margin:0 auto}
+.visual-clock:before{content:'';position:absolute;left:50%;top:50%;width:8px;height:8px;background:var(--coral);
+  border-radius:50%;transform:translate(-50%,-50%);z-index:2}
+.clock-hand{position:absolute;left:50%;top:50%;height:35px;width:4px;background:var(--plum);
+  transform-origin:50% 100%;border-radius:4px}
+.clock-hand.min{height:40px;background:var(--sky)}
+.clock-num{position:absolute;font-size:10px;font-weight:700;color:var(--ink)}
+.clock-num.n12{top:5px;left:50%;transform:translateX(-50%)}.clock-num.n3{right:8px;top:50%;transform:translateY(-50%)}
+.clock-num.n6{bottom:5px;left:50%;transform:translateX(-50%)}.clock-num.n9{left:8px;top:50%;transform:translateY(-50%)}
+.visual-bars{height:96px;display:flex;align-items:flex-end;justify-content:center;gap:10px}
+.visual-bar{width:34px;background:var(--sky);border:3px solid var(--ink);border-radius:10px 10px 4px 4px;
+  display:flex;align-items:flex-start;justify-content:center;font-size:11px;font-weight:700;color:white;padding-top:4px}
+.visual-fraction{display:grid;grid-template-columns:repeat(4,34px);gap:5px;justify-content:center}
+.frac-cell{height:28px;border:2px solid var(--ink);border-radius:7px;background:white}
+.frac-cell.fill{background:var(--sun)}
+.visual-grid{display:grid;grid-template-columns:repeat(6,22px);gap:3px;justify-content:center}
+.grid-cell{height:22px;border:2px solid rgba(45,45,45,.45);border-radius:4px;background:#E8F6FF}
+.visual-angle svg,.visual-cuboid svg,.visual-road svg{width:180px;max-width:100%;display:block;margin:0 auto}
 
 /* ── TEST MENU ── */
 .test-grid{display:flex;flex-direction:column;gap:18px;margin-top:6px}
@@ -1104,23 +1156,202 @@ function practiceTopicOptions(level){
     ...tests.map(t=>({id:t.id,emoji:t.emoji||'📝',name:shortTopicName(t)}))
   ];
 }
+function practiceDifficultyOptions(){
+  return[
+    {id:'easy',emoji:'🌱',name:'Easy'},
+    {id:'medium',emoji:'🧠',name:'Medium'},
+    {id:'hard',emoji:'🔥',name:'Hard'},
+  ];
+}
 function normalizePracticeMode(level,mode){
   const ids=new Set(practiceTopicOptions(level).map(x=>x.id));
   return ids.has(mode)?mode:'mix';
 }
+function normalizePracticeDifficulty(difficulty){
+  return practiceDifficultyOptions().some(x=>x.id===difficulty)?difficulty:'easy';
+}
+function matchesPracticeDifficulty(index,total,difficulty){
+  const last=Math.max(1,total-1);
+  const ratio=index/last;
+  if(difficulty==='hard')return ratio>=0.55;
+  if(difficulty==='medium')return ratio>=0.25&&ratio<=0.75;
+  return ratio<=0.45;
+}
 function practiceQuestionPool(){
   const p=APP.practice;
   p.mode=normalizePracticeMode(p.level,p.mode);
+  p.difficulty=normalizePracticeDifficulty(p.difficulty);
   const tests=p.mode==='mix'
     ?testsForPracticeLevel(p.level)
     :TESTS.filter(t=>t.id===p.mode);
-  return tests.flatMap(t=>(t.questions||[]).map(q=>({...q,practiceTopic:t.name})));
+  const rows=tests.flatMap(t=>{
+    const questions=t.questions||[];
+    return questions
+      .map((q,index)=>({...q,practiceTopic:t.name,practiceDifficulty:p.difficulty,practiceIndex:index}))
+      .filter(q=>matchesPracticeDifficulty(q.practiceIndex,questions.length,p.difficulty));
+  });
+  return rows.length?rows:tests.flatMap(t=>(t.questions||[]).map((q,index)=>({
+    ...q,practiceTopic:t.name,practiceDifficulty:p.difficulty,practiceIndex:index
+  })));
 }
 function genPracticeQuestion(){
   const pool=practiceQuestionPool();
   const q=JSON.parse(JSON.stringify(pick(pool.length?pool:TESTS.flatMap(t=>t.questions))));
   q.practiceTopic=q.practiceTopic||'Practice';
+  q.practiceDifficulty=normalizePracticeDifficulty(q.practiceDifficulty||APP.practice.difficulty);
+  q.visual=inferPracticeVisual(q);
   return q;
+}
+function stripQuestionHtml(text){
+  return String(text||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+}
+function parseMassToGrams(text){
+  const m=String(text||'').match(/(\d+(?:\.\d+)?)\s*(kilograms?|kg|grams?|g)\b/i);
+  if(!m)return null;
+  const value=Number(m[1]);
+  const unit=m[2].toLowerCase();
+  return unit.startsWith('kg')||unit.startsWith('kilogram')?value*1000:value;
+}
+function inferPracticeVisual(q){
+  const plain=stripQuestionHtml(q.text).toLowerCase();
+  const topic=String(q.practiceTopic||'').toLowerCase();
+  const unit=String(q.unit||'').toLowerCase();
+  const joined=`${plain} ${topic} ${unit}`;
+  if(q.type==='compare'){
+    const labelA=q.optA?.label||'A',labelB=q.optB?.label||'B';
+    const massA=parseMassToGrams(labelA),massB=parseMassToGrams(labelB);
+    const isMass=joined.includes('heavier')||joined.includes('mass')||joined.includes('weight')||massA!=null||massB!=null;
+    return{
+      type:isMass?'compare-scale':'compare',
+      title:isMass?'Picture the two objects on a balance scale':'Compare the two choices',
+      left:{emoji:q.optA?.emoji||'A',label:labelA},
+      right:{emoji:q.optB?.emoji||'B',label:labelB}
+    };
+  }
+  if(joined.includes('speed')||joined.includes('rate')||joined.includes('km/h')||joined.includes('m/s'))return{type:'road',title:'Distance, speed and time are connected'};
+  if(joined.includes('ratio')||/\d+\s*:\s*\d+/.test(plain))return{type:'ratio',title:'Each dot shows one ratio part'};
+  if(joined.includes('algebra')||/\b[xyabp]\b/.test(plain)&&/[=+\-]/.test(plain))return{type:'algebra',title:'Keep both sides balanced'};
+  if(joined.includes('circle')||joined.includes('circumference')||joined.includes('radius')||joined.includes('diameter'))return{type:'circle',title:'Circle parts: radius, diameter and edge'};
+  if(joined.includes('angle')||unit==='°')return{type:'angle',title:'Angles measure a turn'};
+  if(joined.includes('volume')||unit.includes('cm³')||joined.includes('cuboid')||joined.includes('cube'))return{type:'cuboid',title:'Volume fills a 3D space'};
+  if(joined.includes('area')||unit.includes('cm²'))return{type:'area',title:'Area counts the squares inside'};
+  if(joined.includes('graph')||joined.includes('chart')||joined.includes('table')||joined.includes('votes')||joined.includes('average'))return{type:'graph',title:'Read the data carefully'};
+  if(joined.includes('fraction')||/\d+\s*\/\s*\d+/.test(plain))return{type:'fraction',title:'Fractions show equal parts'};
+  if(joined.includes('$')||joined.includes('cents')||joined.includes('dollars'))return{type:'money',title:'Use coins and notes to visualise money'};
+  if(joined.includes('time')||joined.includes('hour')||joined.includes('minutes')||unit==='min'||unit==='h'||joined.includes('am')||joined.includes('pm'))return{type:'clock',title:'Use the clock to count time'};
+  if(joined.includes('length')||unit==='cm'||unit==='m'||joined.includes('metres')||joined.includes('centimetres'))return{type:'ruler',title:'Use a ruler to compare lengths'};
+  if(joined.includes('mass')||joined.includes('weight')||unit==='g'||unit==='kg'||joined.includes('grams')||joined.includes('kilograms')){
+    const weightG=parseMassToGrams(q.text)||((unit==='kg'?Number(q.answer)*1000:unit==='g'?Number(q.answer):0)||1000);
+    return{type:'mass-scale',title:'Imagine the reading on a weighing scale',weightG};
+  }
+  if(joined.includes('litre')||joined.includes('millilitre')||unit==='ℓ'||unit==='ml')return{type:'jug',title:'Capacity tells how much a container holds'};
+  if(joined.includes('shape')||joined.includes('triangle')||joined.includes('rectangle')||joined.includes('square')||joined.includes('sphere')||joined.includes('cone'))return{type:'shapes',title:'Look at sides, corners and faces'};
+  return{type:'blocks',title:'Break the numbers into parts'};
+}
+function renderQuestionVisual(q){
+  const v=q.visual;
+  if(!v)return '';
+  const title=`<div class="visual-title">${escapeHtml(v.title||'Visual helper')}</div>`;
+  if(v.type==='compare-scale')return `
+    <div class="visual-card">${title}
+      <div class="visual-balance">
+        <div class="visual-beam"></div><div class="visual-stand"></div><div class="visual-base"></div>
+        <div class="visual-pan left"><span class="visual-emoji">${v.left.emoji}</span><div class="visual-label">${escapeHtml(v.left.label)}</div></div>
+        <div class="visual-pan right"><span class="visual-emoji">${v.right.emoji}</span><div class="visual-label">${escapeHtml(v.right.label)}</div></div>
+      </div>
+    </div>`;
+  if(v.type==='compare')return `
+    <div class="visual-card">${title}
+      <div class="visual-row">
+        <div class="visual-choice"><span class="visual-emoji">${v.left.emoji}</span><div class="visual-label">${escapeHtml(v.left.label)}</div></div>
+        <div class="vs">VS</div>
+        <div class="visual-choice"><span class="visual-emoji">${v.right.emoji}</span><div class="visual-label">${escapeHtml(v.right.label)}</div></div>
+      </div>
+    </div>`;
+  if(v.type==='mass-scale')return `<div class="visual-card">${title}<div class="scale-wrap">${buildScale(v.weightG)}</div></div>`;
+  if(v.type==='ruler')return `
+    <div class="visual-card">${title}
+      <div class="visual-ruler">${Array.from({length:13},(_,i)=>`<div class="visual-tick ${i%5===0?'big':i%2===0?'mid':'small'}"></div>`).join('')}</div>
+    </div>`;
+  if(v.type==='money')return `
+    <div class="visual-card">${title}<div class="visual-money">
+      <span class="note">$10</span><span class="note">$5</span><span class="coin">50c</span><span class="coin">20c</span><span class="coin">10c</span>
+    </div></div>`;
+  if(v.type==='clock')return `
+    <div class="visual-card">${title}<div class="visual-clock">
+      <span class="clock-num n12">12</span><span class="clock-num n3">3</span><span class="clock-num n6">6</span><span class="clock-num n9">9</span>
+      <span class="clock-hand" style="transform:translate(-50%,-100%) rotate(40deg)"></span>
+      <span class="clock-hand min" style="transform:translate(-50%,-100%) rotate(120deg)"></span>
+    </div></div>`;
+  if(v.type==='graph')return `
+    <div class="visual-card">${title}<div class="visual-bars">
+      <div class="visual-bar" style="height:42px">A</div><div class="visual-bar" style="height:72px;background:var(--mint)">B</div><div class="visual-bar" style="height:56px;background:var(--coral)">C</div>
+    </div></div>`;
+  if(v.type==='fraction')return `
+    <div class="visual-card">${title}<div class="visual-fraction">
+      ${Array.from({length:8},(_,i)=>`<div class="frac-cell ${i<3?'fill':''}"></div>`).join('')}
+    </div></div>`;
+  if(v.type==='area')return `
+    <div class="visual-card">${title}<div class="visual-grid">
+      ${Array.from({length:24},()=>'<div class="grid-cell"></div>').join('')}
+    </div></div>`;
+  if(v.type==='angle')return `
+    <div class="visual-card visual-angle">${title}
+      <svg viewBox="0 0 180 110" aria-hidden="true">
+        <path d="M35 88 L145 88" stroke="#2D2D2D" stroke-width="6" stroke-linecap="round"/>
+        <path d="M35 88 L120 30" stroke="#6A4C93" stroke-width="6" stroke-linecap="round"/>
+        <path d="M62 88 A34 34 0 0 1 78 61" fill="none" stroke="#FF6B6B" stroke-width="5"/>
+        <text x="76" y="82" font-family="Fredoka" font-size="14" font-weight="700" fill="#6A4C93">?</text>
+      </svg>
+    </div>`;
+  if(v.type==='cuboid')return `
+    <div class="visual-card visual-cuboid">${title}
+      <svg viewBox="0 0 190 110" aria-hidden="true">
+        <polygon points="45,38 128,38 158,62 75,62" fill="#E8F6FF" stroke="#2D2D2D" stroke-width="4"/>
+        <polygon points="45,38 75,62 75,92 45,68" fill="#FFF3CD" stroke="#2D2D2D" stroke-width="4"/>
+        <polygon points="75,62 158,62 158,92 75,92" fill="#D4EDDA" stroke="#2D2D2D" stroke-width="4"/>
+      </svg>
+    </div>`;
+  if(v.type==='road')return `
+    <div class="visual-card visual-road">${title}
+      <svg viewBox="0 0 210 90" aria-hidden="true">
+        <path d="M20 72 C70 32 140 32 190 72" fill="none" stroke="#2D2D2D" stroke-width="18" stroke-linecap="round"/>
+        <path d="M28 69 C75 39 135 39 182 69" fill="none" stroke="#FFD93D" stroke-width="4" stroke-dasharray="12 10"/>
+        <text x="34" y="28" font-family="Fredoka" font-size="24">🚲</text>
+        <text x="150" y="30" font-family="Fredoka" font-size="24">🏁</text>
+      </svg>
+    </div>`;
+  if(v.type==='ratio')return `
+    <div class="visual-card">${title}<div class="visual-row">
+      <div>${'🔵'.repeat(3)}</div><div class="vs">:</div><div>${'🟢'.repeat(5)}</div>
+    </div></div>`;
+  if(v.type==='algebra')return `
+    <div class="visual-card">${title}<div class="visual-row">
+      <div class="visual-choice"><span class="visual-emoji">𝑥</span><div class="visual-label">unknown</div></div>
+      <div class="vs">=</div>
+      <div class="visual-choice"><span class="visual-emoji">🔢</span><div class="visual-label">number</div></div>
+    </div></div>`;
+  if(v.type==='circle')return `
+    <div class="visual-card">${title}
+      <svg viewBox="0 0 170 110" style="width:170px;max-width:100%;display:block;margin:0 auto" aria-hidden="true">
+        <circle cx="85" cy="55" r="42" fill="#E8F6FF" stroke="#2D2D2D" stroke-width="5"/>
+        <line x1="85" y1="55" x2="127" y2="55" stroke="#FF6B6B" stroke-width="5"/>
+        <line x1="43" y1="55" x2="127" y2="55" stroke="#6A4C93" stroke-width="3" stroke-dasharray="6 5"/>
+      </svg>
+    </div>`;
+  if(v.type==='jug')return `
+    <div class="visual-card">${title}<div class="visual-row">
+      <div style="font-size:64px">🥤</div><div class="visual-choice"><div class="visual-label">ℓ / ml</div><div style="font-size:28px">💧</div></div>
+    </div></div>`;
+  if(v.type==='shapes')return `
+    <div class="visual-card">${title}<div class="visual-row">
+      <span style="font-size:38px">△</span><span style="font-size:38px">□</span><span style="font-size:38px">○</span><span style="font-size:38px">🧊</span>
+    </div></div>`;
+  return `
+    <div class="visual-card">${title}<div class="visual-row">
+      <div class="visual-choice"><span class="visual-emoji">🧱</span><div class="visual-label">break apart</div></div>
+      <div class="visual-choice"><span class="visual-emoji">🔢</span><div class="visual-label">calculate</div></div>
+    </div></div>`;
 }
 
 const APP={
@@ -1135,7 +1366,7 @@ const APP={
   // Live session
   sessionStart:null,sessionType:null,timerTick:null,
   // Practice
-  practice:{mode:'mix',level:1,qNum:1,currentQ:null,answered:false,history:[]},
+  practice:{mode:'mix',difficulty:'easy',level:1,qNum:1,currentQ:null,answered:false,history:[]},
   // Test
   test:{id:null,questions:[],current:0,answers:[]},
   // Review
@@ -2028,7 +2259,7 @@ async function loginStudent(name){
 async function loadStudentByName(name){
   const ok=await loginStudent(name);
   if(!ok)return false;
-  APP.practice={mode:'mix',level:1,qNum:1,currentQ:null,answered:false,history:[]};
+  APP.practice={mode:'mix',difficulty:'easy',level:1,qNum:1,currentQ:null,answered:false,history:[]};
   APP.test={id:null,questions:[],current:0,answers:[]};
   APP.review={source:null,items:[],backTo:'home'};
   APP.selectedAttempt=null;
@@ -2339,7 +2570,9 @@ function sTestHistory(){
 function sPractice(){
   const p=APP.practice,cor=p.history.filter(x=>x.correct).length;
   p.mode=normalizePracticeMode(p.level,p.mode);
+  p.difficulty=normalizePracticeDifficulty(p.difficulty);
   const topics=practiceTopicOptions(p.level);
+  const diffs=practiceDifficultyOptions();
   return `
 <div class="screen">
   <div class="nav">
@@ -2350,6 +2583,10 @@ function sPractice(){
   <div class="levels">
     ${[1,2,3,4,5,6].map(l=>`<button class="level-btn${p.level===l?' active':''}" data-a="set-level" data-val="${l}">
       <span class="lvl-num">LEVEL</span>P${l}</button>`).join('')}
+  </div>
+  <div class="diffs">
+    ${diffs.map(d=>`<button class="diff-btn ${d.id}${p.difficulty===d.id?' active':''}" data-a="set-difficulty" data-val="${d.id}">
+      <span class="mode-emoji">${d.emoji}</span>${d.name}</button>`).join('')}
   </div>
   <div class="modes">
     ${topics.map(t=>
@@ -2369,9 +2606,10 @@ function renderPracticeQ(){
   p.currentQ=genPracticeQuestion();p.answered=false;
   const card=document.getElementById('practiceCard');if(!card)return;
   const topic=p.currentQ.practiceTopic?shortTopicName({name:p.currentQ.practiceTopic}):'Mixed';
+  const diff=cap(normalizePracticeDifficulty(p.currentQ.practiceDifficulty||p.difficulty));
   card.innerHTML=`
     <div class="card">
-      <div class="card-badge">P${p.level} · ${escapeHtml(topic)} · Q ${p.qNum}</div>
+      <div class="card-badge">P${p.level} · ${escapeHtml(topic)} · ${diff} · Q ${p.qNum}</div>
       ${qBody(p.currentQ)}
     </div>
     <div id="pFeed"></div>`;
@@ -2788,8 +3026,10 @@ function sAttemptDetail(){
 // ================================================================
 function qBody(q){
   const unit=q.unit?`<span class="unit-label">${q.unit}</span>`:'';
+  const visual=renderQuestionVisual(q);
   if(q.type==='number')return `
-    ${q.scaleWeightG!=null?`<div class="scale-wrap">${buildScale(q.scaleWeightG)}</div>`:''}
+    ${visual}
+    ${!visual&&q.scaleWeightG!=null?`<div class="scale-wrap">${buildScale(q.scaleWeightG)}</div>`:''}
     ${q.item?`<div class="item-display"><span class="item-emoji">${q.item.emoji}</span><div class="item-name">${q.item.name}</div></div>`:''}
     <div class="q-text">${q.text}</div>
     <div class="answer-area">
@@ -2798,6 +3038,7 @@ function qBody(q){
     </div>
     <button class="submit-btn" data-a="submit-ans">Check ✨</button>`;
   if(q.type==='compare')return `
+    ${visual}
     <div class="q-text">${q.text}</div>
     <div class="compare-row">
       <div class="cmp-item" data-a="pick-cmp" data-val="A">
@@ -3110,7 +3351,7 @@ function handle(a,v){
     // ── Student navigation ──────────────────────────────────────
     case 'go-practice':
       if(!APP.studentName){go('student_login');toast('Login with your name first');break;}
-      APP.practice={mode:'mix',level:1,qNum:1,currentQ:null,answered:false,history:[]};
+      APP.practice={mode:'mix',difficulty:'easy',level:1,qNum:1,currentQ:null,answered:false,history:[]};
       startSession('practice');go('practice');break;
     case 'go-test-menu':
       if(!APP.studentName){go('student_login');toast('Login with your name first');break;}
@@ -3124,6 +3365,10 @@ function handle(a,v){
     case 'set-level':
       APP.practice.level=parseInt(v)||1;
       APP.practice.mode='mix';
+      APP.practice.qNum=1;
+      go('practice');break;
+    case 'set-difficulty':
+      APP.practice.difficulty=normalizePracticeDifficulty(v);
       APP.practice.qNum=1;
       go('practice');break;
     case 'set-mode':
